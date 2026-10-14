@@ -1,6 +1,6 @@
 # 25+1 Experiments with GLiNER2.5-Decide
 
-This notebook and deployment code accompany the blogpost [25+1 Experiments with GLiNER2.5-Decide]().
+This notebook and deployment code accompany the blogpost [25+1 Experiments with GLiNER2.5-Decide](https://www.matheinated.com/p/251-experiments-with-gliner25-decide).
 
 ## Environment and notebook setup
 
