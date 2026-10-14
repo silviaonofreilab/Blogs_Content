@@ -6,7 +6,7 @@ Code, notebooks and supporting files for blogposts by Silvia Onofrei.
 
 | Article | Blogpost | Code and notebooks |
 | --- | --- | --- |
-| 25+1 Experiments with GLiNER2.5-Decide | Forthcoming | [gliner_decide_experiments](gliner_decide_experiments/) |
+| 25+1 Experiments with GLiNER2.5-Decide | [Read](https://www.matheinated.com/p/251-experiments-with-gliner25-decide) | [gliner_decide_experiments](gliner_decide_experiments/) |
 | Spectral Community Detection in Clinical Knowledge Graphs | [Read](https://www.matheinated.com/p/spectral-community-detection-in-clinical) | [algebraic_connectivity](algebraic_connectivity/) |
 | Relation Extraction with Llama3 Models | [Read](https://www.matheinated.com/p/relation-extraction-with-llama3-models-f8bc41858b9e) | [llama3_re](llama3_re/) |
 | Cypher Generation: The Good, The Bad and The Messy | [Read](https://www.matheinated.com/p/cypher-generation-the-good-the-bad-and-the-messy-4ec119dd72ea) | [cypher_generator](cypher_generator/) |
