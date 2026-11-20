@@ -6,6 +6,7 @@ Code, notebooks and supporting files for blogposts by Silvia Onofrei.
 
 | Article | Blogpost | Code and notebooks |
 | --- | --- | --- |
+| Do Decision Models Follow the Evidence?| [Read](https://open.substack.com/pub/matheinated/p/do-decision-models-follow-the-evidence?r=ttco8&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true) |[gliclassv4_on_graphs](gliclassv4_on_graphs) |
 | 25+1 Experiments with GLiNER2.5-Decide | [Read](https://www.matheinated.com/p/251-experiments-with-gliner25-decide) | [gliner_decide_experiments](gliner_decide_experiments/) |
 | Spectral Community Detection in Clinical Knowledge Graphs | [Read](https://www.matheinated.com/p/spectral-community-detection-in-clinical) | [algebraic_connectivity](algebraic_connectivity/) |
 | Relation Extraction with Llama3 Models | [Read](https://www.matheinated.com/p/relation-extraction-with-llama3-models-f8bc41858b9e) | [llama3_re](llama3_re/) |
