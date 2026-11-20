@@ -1,6 +1,6 @@
 # GliDecide: GLiClass decision models on a MIMIC-IV knowledge graph
 
-Companion code for **Do Decision Models Follow the Evidence?**
+Companion code for **[Do Decision Models Follow the Evidence?](https://open.substack.com/pub/matheinated/p/do-decision-models-follow-the-evidence?r=ttco8&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true)**
 
 How well do the [GLiClass v4](https://huggingface.co/knowledgator/gliclass-v4-edge) decision models make decisions over a knowledge graph?
 This folder tests Edge, 2B, 9B and 27B on 48 questions about a small clinical graph built from the openly available MIMIC-IV demo.
