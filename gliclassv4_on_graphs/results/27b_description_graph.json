@@ -1,0 +1,626 @@
+{
+  "settings": {
+    "model_id": "knowledgator/gliclass-v4-27b",
+    "device": "cuda:0",
+    "dtype": "bfloat16",
+    "max_length": 8192,
+    "model_name": "27b",
+    "questions_file": "questions.json",
+    "run": "description_graph",
+    "label_source": "description",
+    "include_graph": true,
+    "include_edges": true,
+    "include_rules": true
+  },
+  "answers": [
+    {
+      "id": "Q01",
+      "selected": "FLAG",
+      "score": 0.616529703140259,
+      "seconds": 0.122967007000625,
+      "scores": {
+        "FLAG": 0.616529703140259,
+        "DO_NOT_FLAG": 0.271985054016113,
+        "INSUFFICIENT_INFORMATION": 0.068366825580597,
+        "CONFLICTING_RECORDS": 0.043118417263031
+      }
+    },
+    {
+      "id": "Q02",
+      "selected": "FAMILY_HISTORY",
+      "score": 0.98759800195694,
+      "seconds": 0.116267511999467,
+      "scores": {
+        "FAMILY_HISTORY": 0.98759800195694,
+        "PATIENT_DIAGNOSIS": 0.00130012864247,
+        "INSUFFICIENT_INFORMATION": 0.003881467273459,
+        "CONFLICTING_RECORDS": 0.002839742228389,
+        "BOTH_FAMILY_AND_PATIENT": 0.001951724174432,
+        "NEITHER_FAMILY_NOR_PATIENT": 0.002428960055113
+      }
+    },
+    {
+      "id": "Q03",
+      "selected": "BOTH",
+      "score": 0.974324524402618,
+      "seconds": 0.137030156000037,
+      "scores": {
+        "BOTH": 0.974324524402618,
+        "DEPRESSION_ONLY": 0.003682601731271,
+        "ANXIETY_ONLY": 0.003799499711022,
+        "NEITHER_RECORDED": 0.003249884350225,
+        "INSUFFICIENT_INFORMATION": 0.006773341447115,
+        "CONFLICTING_RECORDS": 0.008170209825039
+      }
+    },
+    {
+      "id": "Q04",
+      "selected": "HISTORY_ONLY",
+      "score": 0.775929152965546,
+      "seconds": 0.106551919000594,
+      "scores": {
+        "CURRENT_USE_AND_HISTORY": 0.019501034170389,
+        "CURRENT_USE": 0.019501034170389,
+        "HISTORY_ONLY": 0.775929152965546,
+        "NEITHER_RECORDED": 0.022445552051067,
+        "INSUFFICIENT_INFORMATION": 0.12133950740099,
+        "CONFLICTING_RECORDS": 0.041283685714006
+      }
+    },
+    {
+      "id": "Q05",
+      "selected": "BEFORE",
+      "score": 0.978221356868744,
+      "seconds": 0.106147012000292,
+      "scores": {
+        "BEFORE": 0.978221356868744,
+        "AFTER": 0.003966656047851,
+        "INSUFFICIENT_INFORMATION": 0.012218161486089,
+        "CONFLICTING_RECORDS": 0.005593881476671
+      }
+    },
+    {
+      "id": "Q06",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.969409286975861,
+      "seconds": 0.124935080999421,
+      "scores": {
+        "BEFORE": 0.010196040384471,
+        "AFTER": 0.010356604121625,
+        "INSUFFICIENT_INFORMATION": 0.969409286975861,
+        "CONFLICTING_RECORDS": 0.010037965141237
+      }
+    },
+    {
+      "id": "Q07",
+      "selected": "DOSE_30",
+      "score": 0.927730202674866,
+      "seconds": 0.097452250999595,
+      "scores": {
+        "DOSE_1": 0.014534003101289,
+        "DOSE_3": 0.018955912441015,
+        "DOSE_20": 0.015715004876256,
+        "DOSE_30": 0.927730202674866,
+        "INSUFFICIENT_INFORMATION": 0.012431592680514,
+        "CONFLICTING_RECORDS": 0.010633304715157
+      }
+    },
+    {
+      "id": "Q08",
+      "selected": "UNIT_ML",
+      "score": 0.978521585464478,
+      "seconds": 0.105478715000572,
+      "scores": {
+        "UNIT_G": 0.003090183017775,
+        "UNIT_MG": 0.001288179890253,
+        "UNIT_ML": 0.978521585464478,
+        "UNIT_UDCUP": 0.00729803647846,
+        "INSUFFICIENT_INFORMATION": 0.004786169156432,
+        "CONFLICTING_RECORDS": 0.005015862174332
+      }
+    },
+    {
+      "id": "Q09",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.988041043281555,
+      "seconds": 0.114472580000438,
+      "scores": {
+        "BEFORE": 0.003535701427609,
+        "AFTER": 0.004539930727333,
+        "INSUFFICIENT_INFORMATION": 0.988041043281555,
+        "CONFLICTING_RECORDS": 0.003883208613843
+      }
+    },
+    {
+      "id": "Q10",
+      "selected": "NO",
+      "score": 0.428469389677048,
+      "seconds": 0.129908285999591,
+      "scores": {
+        "YES": 0.140263110399246,
+        "NO": 0.428469389677048,
+        "INSUFFICIENT_INFORMATION": 0.209738984704018,
+        "CONFLICTING_RECORDS": 0.221528515219688
+      }
+    },
+    {
+      "id": "Q11",
+      "selected": "NOT_GIVEN",
+      "score": 0.409199386835098,
+      "seconds": 0.113035332999971,
+      "scores": {
+        "NOT_GIVEN": 0.409199386835098,
+        "CONFIRMED_5000_UNIT": 0.014024270698428,
+        "INSUFFICIENT_INFORMATION": 0.198190167546272,
+        "CONFLICTING_RECORDS": 0.378586202859879
+      }
+    },
+    {
+      "id": "Q12",
+      "selected": "OUTSIDE_WINDOW",
+      "score": 0.953642547130585,
+      "seconds": 0.124596159000248,
+      "scores": {
+        "WITHIN_WINDOW": 0.008122710511088,
+        "OUTSIDE_WINDOW": 0.953642547130585,
+        "INSUFFICIENT_INFORMATION": 0.024631816893816,
+        "CONFLICTING_RECORDS": 0.013602980412543
+      }
+    },
+    {
+      "id": "Q13",
+      "selected": "CONFLICTING_RECORDS",
+      "score": 0.49622505903244,
+      "seconds": 0.097210888000518,
+      "scores": {
+        "YES": 0.046021092683077,
+        "NO": 0.274309247732162,
+        "INSUFFICIENT_INFORMATION": 0.183444544672966,
+        "CONFLICTING_RECORDS": 0.49622505903244
+      }
+    },
+    {
+      "id": "Q14",
+      "selected": "NO",
+      "score": 0.633866190910339,
+      "seconds": 0.13201902199944,
+      "scores": {
+        "YES": 0.034795708954334,
+        "NO": 0.633866190910339,
+        "INSUFFICIENT_INFORMATION": 0.180192440748215,
+        "CONFLICTING_RECORDS": 0.151145681738853
+      }
+    },
+    {
+      "id": "Q15",
+      "selected": "INFLUENZA_ONLY",
+      "score": 0.999976754188538,
+      "seconds": 0.116886279999562,
+      "scores": {
+        "BOTH": 4.86035924e-06,
+        "NEITHER_GIVEN": 4.565884865e-06,
+        "INFLUENZA_ONLY": 0.999976754188538,
+        "PNEUMOCOCCAL_ONLY": 3.785251238e-06,
+        "INSUFFICIENT_INFORMATION": 5.17382523e-06,
+        "CONFLICTING_RECORDS": 4.86035924e-06
+      }
+    },
+    {
+      "id": "Q16",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.75756973028183,
+      "seconds": 0.145936480999808,
+      "scores": {
+        "FULL_DOSE": 0.064159072935581,
+        "PARTIAL_DOSE": 0.081104665994644,
+        "EXCEEDS_PRESCRIBED_DOSE": 0.055742371827364,
+        "INSUFFICIENT_INFORMATION": 0.75756973028183,
+        "CONFLICTING_RECORDS": 0.041424214839935
+      }
+    },
+    {
+      "id": "Q17",
+      "selected": "DIFFERENT_CODES",
+      "score": 0.996917128562927,
+      "seconds": 0.132660195999961,
+      "scores": {
+        "SAME_CODES": 0.000724774377886,
+        "DIFFERENT_CODES": 0.996917128562927,
+        "INSUFFICIENT_INFORMATION": 0.001633304287679,
+        "CONFLICTING_RECORDS": 0.000724774377886
+      }
+    },
+    {
+      "id": "Q18",
+      "selected": "MATCH",
+      "score": 0.933823585510254,
+      "seconds": 0.117457917999673,
+      "scores": {
+        "MATCH": 0.933823585510254,
+        "MISMATCH": 0.013959531672299,
+        "INSUFFICIENT_INFORMATION": 0.027331436052918,
+        "CONFLICTING_RECORDS": 0.024885553866625
+      }
+    },
+    {
+      "id": "Q19",
+      "selected": "ONE",
+      "score": 0.94510805606842,
+      "seconds": 0.161059475000002,
+      "scores": {
+        "BOTH": 0.003772967495024,
+        "ONE": 0.94510805606842,
+        "NEITHER_RECORDED": 0.009634609334171,
+        "INSUFFICIENT_INFORMATION": 0.036933232098818,
+        "CONFLICTING_RECORDS": 0.00455106748268
+      }
+    },
+    {
+      "id": "Q20",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.514510989189148,
+      "seconds": 0.159485844999836,
+      "scores": {
+        "EVERY_ADMISSION": 0.00912029389292,
+        "SOME_ADMISSIONS": 0.458286374807358,
+        "NONE_RECORDED": 0.004175574984401,
+        "INSUFFICIENT_INFORMATION": 0.514510989189148,
+        "CONFLICTING_RECORDS": 0.013906787149608
+      }
+    },
+    {
+      "id": "Q21",
+      "selected": "DIFFERENT",
+      "score": 0.937806308269501,
+      "seconds": 0.250549016999685,
+      "scores": {
+        "SAME": 0.019012676551938,
+        "DIFFERENT": 0.937806308269501,
+        "INSUFFICIENT_INFORMATION": 0.027663281187415,
+        "CONFLICTING_RECORDS": 0.015517693944275
+      }
+    },
+    {
+      "id": "Q22",
+      "selected": "YES",
+      "score": 0.922691345214844,
+      "seconds": 0.107790819000002,
+      "scores": {
+        "YES": 0.922691345214844,
+        "NO": 0.024588892236352,
+        "INSUFFICIENT_INFORMATION": 0.036340028047562,
+        "CONFLICTING_RECORDS": 0.016379732638597
+      }
+    },
+    {
+      "id": "Q23",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.990509927272797,
+      "seconds": 0.103210410999964,
+      "scores": {
+        "BEFORE": 0.003657052060589,
+        "AFTER": 0.003544536419213,
+        "INSUFFICIENT_INFORMATION": 0.990509927272797,
+        "CONFLICTING_RECORDS": 0.002288524527103
+      }
+    },
+    {
+      "id": "Q24",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.814762353897095,
+      "seconds": 0.111181075999411,
+      "scores": {
+        "UNIT_G": 0.017109181731939,
+        "UNIT_MG": 0.004901862237602,
+        "UNIT_ML": 0.067668125033379,
+        "UNIT_UDCUP": 0.089645698666573,
+        "INSUFFICIENT_INFORMATION": 0.814762353897095,
+        "CONFLICTING_RECORDS": 0.005912774242461
+      }
+    },
+    {
+      "id": "Q25",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.905412495136261,
+      "seconds": 0.133169176000592,
+      "scores": {
+        "YES": 0.019847502931952,
+        "NO": 0.047611683607101,
+        "INSUFFICIENT_INFORMATION": 0.905412495136261,
+        "CONFLICTING_RECORDS": 0.027128318324685
+      }
+    },
+    {
+      "id": "Q26",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.905150592327118,
+      "seconds": 0.110976981999556,
+      "scores": {
+        "BOTH": 0.017171612009406,
+        "NEITHER_GIVEN": 0.010914941318333,
+        "INFLUENZA_ONLY": 0.051264967769384,
+        "PNEUMOCOCCAL_ONLY": 0.005403287708759,
+        "INSUFFICIENT_INFORMATION": 0.905150592327118,
+        "CONFLICTING_RECORDS": 0.010094670578837
+      }
+    },
+    {
+      "id": "Q27",
+      "selected": "PARTIAL_DOSE",
+      "score": 0.496964752674103,
+      "seconds": 0.145342817999335,
+      "scores": {
+        "FULL_DOSE": 0.059122577309608,
+        "PARTIAL_DOSE": 0.496964752674103,
+        "EXCEEDS_PRESCRIBED_DOSE": 0.062935650348663,
+        "INSUFFICIENT_INFORMATION": 0.307970345020294,
+        "CONFLICTING_RECORDS": 0.073006629943848
+      }
+    },
+    {
+      "id": "Q28",
+      "selected": "MATCH",
+      "score": 0.893935799598694,
+      "seconds": 0.118339605000074,
+      "scores": {
+        "MATCH": 0.893935799598694,
+        "MISMATCH": 0.015024715103209,
+        "INSUFFICIENT_INFORMATION": 0.053267240524292,
+        "CONFLICTING_RECORDS": 0.037772130221128
+      }
+    },
+    {
+      "id": "Q29",
+      "selected": "MATCH",
+      "score": 0.926479160785675,
+      "seconds": 0.117925827000363,
+      "scores": {
+        "MATCH": 0.926479160785675,
+        "MISMATCH": 0.015330265276134,
+        "INSUFFICIENT_INFORMATION": 0.028640707954764,
+        "CONFLICTING_RECORDS": 0.029549863189459
+      }
+    },
+    {
+      "id": "Q30",
+      "selected": "INSUFFICIENT_INFORMATION",
+      "score": 0.694444358348846,
+      "seconds": 0.09884205400067,
+      "scores": {
+        "YES": 0.049236126244068,
+        "NO": 0.236734718084335,
+        "INSUFFICIENT_INFORMATION": 0.694444358348846,
+        "CONFLICTING_RECORDS": 0.019584780558944
+      }
+    },
+    {
+      "id": "Q31",
+      "selected": "NOT_ALCOHOL_RELATED",
+      "score": 0.978156805038452,
+      "seconds": 0.111901369999941,
+      "scores": {
+        "ALCOHOL_RELATED": 0.002924636006355,
+        "NOT_ALCOHOL_RELATED": 0.978156805038452,
+        "INSUFFICIENT_INFORMATION": 0.010049722157419,
+        "CONFLICTING_RECORDS": 0.008868847973645
+      }
+    },
+    {
+      "id": "Q32",
+      "selected": "BOTH",
+      "score": 0.992497503757477,
+      "seconds": 0.237996838000072,
+      "scores": {
+        "ANTIPLATELET_ONLY": 0.001049865502864,
+        "ANTICOAGULANT_ONLY": 0.000617184094153,
+        "BOTH": 0.992497503757477,
+        "NEITHER": 0.000768097990658,
+        "INSUFFICIENT_INFORMATION": 0.003336465684697,
+        "CONFLICTING_RECORDS": 0.001730935531668
+      }
+    },
+    {
+      "id": "Q33",
+      "selected": "YES",
+      "score": 0.988015711307526,
+      "seconds": 0.248670410000159,
+      "scores": {
+        "YES": 0.988015711307526,
+        "NO": 0.00195254967548,
+        "INSUFFICIENT_INFORMATION": 0.005562296602875,
+        "CONFLICTING_RECORDS": 0.004469431005418
+      }
+    },
+    {
+      "id": "Q34",
+      "selected": "NO",
+      "score": 0.971075356006622,
+      "seconds": 0.142539243000101,
+      "scores": {
+        "YES": 0.004900521133095,
+        "NO": 0.971075356006622,
+        "INSUFFICIENT_INFORMATION": 0.017925361171365,
+        "CONFLICTING_RECORDS": 0.006098797544837
+      }
+    },
+    {
+      "id": "Q35",
+      "selected": "PERSONAL_ONLY",
+      "score": 0.980464160442352,
+      "seconds": 0.182906875000299,
+      "scores": {
+        "FAMILY_ONLY": 0.002430327702314,
+        "BOTH": 0.002931534778327,
+        "PERSONAL_ONLY": 0.980464160442352,
+        "NEITHER": 0.002669192617759,
+        "INSUFFICIENT_INFORMATION": 0.007968737743795,
+        "CONFLICTING_RECORDS": 0.003536105854437
+      }
+    },
+    {
+      "id": "Q36",
+      "selected": "YES",
+      "score": 0.959465622901916,
+      "seconds": 0.155679509000038,
+      "scores": {
+        "YES": 0.959465622901916,
+        "NO": 0.008431726135314,
+        "INSUFFICIENT_INFORMATION": 0.018416583538055,
+        "CONFLICTING_RECORDS": 0.013686041347682
+      }
+    },
+    {
+      "id": "Q37",
+      "selected": "BOTH",
+      "score": 0.98710560798645,
+      "seconds": 0.114993817000141,
+      "scores": {
+        "BLEEDING_ONLY": 0.001579766510986,
+        "ANTICOAGULANT_ONLY": 0.002028460148722,
+        "BOTH": 0.98710560798645,
+        "NEITHER": 0.001192470313981,
+        "INSUFFICIENT_INFORMATION": 0.003450527321547,
+        "CONFLICTING_RECORDS": 0.004643192049116
+      }
+    },
+    {
+      "id": "Q38",
+      "selected": "BACTERIAL_ONLY",
+      "score": 0.944410800933838,
+      "seconds": 0.117324075999932,
+      "scores": {
+        "BACTERIAL_ONLY": 0.944410800933838,
+        "VIRAL_ONLY": 0.004547709599137,
+        "BOTH": 0.008630036376417,
+        "NEITHER": 0.00715455180034,
+        "INSUFFICIENT_INFORMATION": 0.021028397604823,
+        "CONFLICTING_RECORDS": 0.014228525571525
+      }
+    },
+    {
+      "id": "Q39",
+      "selected": "VIRAL_ONLY",
+      "score": 0.92444509267807,
+      "seconds": 0.128084834000219,
+      "scores": {
+        "BACTERIAL_ONLY": 0.007282278034836,
+        "VIRAL_ONLY": 0.92444509267807,
+        "BOTH": 0.010269657708704,
+        "NEITHER": 0.01145663112402,
+        "INSUFFICIENT_INFORMATION": 0.028801968321204,
+        "CONFLICTING_RECORDS": 0.01774437725544
+      }
+    },
+    {
+      "id": "Q40",
+      "selected": "HISTORY_ONLY",
+      "score": 0.968440353870392,
+      "seconds": 0.219883417999881,
+      "scores": {
+        "CURRENT_USE_AND_HISTORY": 0.002762985648587,
+        "CURRENT_USE": 0.002515726955608,
+        "HISTORY_ONLY": 0.968440353870392,
+        "NEITHER_RECORDED": 0.004279396031052,
+        "INSUFFICIENT_INFORMATION": 0.014252564869821,
+        "CONFLICTING_RECORDS": 0.007748985197395
+      }
+    },
+    {
+      "id": "Q41",
+      "selected": "YES",
+      "score": 0.981427907943726,
+      "seconds": 0.122782282999651,
+      "scores": {
+        "YES": 0.981427907943726,
+        "NO": 0.003430680371821,
+        "INSUFFICIENT_INFORMATION": 0.007039298303425,
+        "CONFLICTING_RECORDS": 0.008102183230221
+      }
+    },
+    {
+      "id": "Q42",
+      "selected": "NO",
+      "score": 0.989126622676849,
+      "seconds": 0.119214547000411,
+      "scores": {
+        "YES": 0.00162054062821,
+        "NO": 0.989126622676849,
+        "INSUFFICIENT_INFORMATION": 0.005927692167461,
+        "CONFLICTING_RECORDS": 0.00332513381727
+      }
+    },
+    {
+      "id": "Q43",
+      "selected": "YES",
+      "score": 0.960982918739319,
+      "seconds": 0.108316928999557,
+      "scores": {
+        "YES": 0.960982918739319,
+        "NO": 0.006785796489567,
+        "INSUFFICIENT_INFORMATION": 0.018736185505986,
+        "CONFLICTING_RECORDS": 0.013495167717338
+      }
+    },
+    {
+      "id": "Q44",
+      "selected": "YES",
+      "score": 0.967719852924347,
+      "seconds": 0.140346328000305,
+      "scores": {
+        "YES": 0.967719852924347,
+        "NO": 0.011899604462087,
+        "INSUFFICIENT_INFORMATION": 0.013274967670441,
+        "CONFLICTING_RECORDS": 0.007105578202754
+      }
+    },
+    {
+      "id": "Q45",
+      "selected": "LOWER",
+      "score": 0.983198583126068,
+      "seconds": 0.208156853000219,
+      "scores": {
+        "HIGHER": 0.00354596786201,
+        "LOWER": 0.983198583126068,
+        "EQUAL": 0.003658528905362,
+        "INSUFFICIENT_INFORMATION": 0.005938378162682,
+        "CONFLICTING_RECORDS": 0.003658528905362
+      }
+    },
+    {
+      "id": "Q46",
+      "selected": "SUPPORTED",
+      "score": 0.812696754932404,
+      "seconds": 0.141826832000334,
+      "scores": {
+        "SUPPORTED": 0.812696754932404,
+        "NOT_SUPPORTED": 0.071569614112377,
+        "INSUFFICIENT_INFORMATION": 0.078603841364384,
+        "CONFLICTING_RECORDS": 0.037129823118448
+      }
+    },
+    {
+      "id": "Q47",
+      "selected": "NOT_WITHIN_30_DAYS",
+      "score": 0.517892301082611,
+      "seconds": 0.111916027000007,
+      "scores": {
+        "DIED_WITHIN_30_DAYS": 0.325516045093536,
+        "NOT_WITHIN_30_DAYS": 0.517892301082611,
+        "INSUFFICIENT_INFORMATION": 0.110265627503395,
+        "CONFLICTING_RECORDS": 0.046326067298651
+      }
+    },
+    {
+      "id": "Q48",
+      "selected": "SAME_CODES",
+      "score": 0.979546248912811,
+      "seconds": 0.123133342000074,
+      "scores": {
+        "SAME_CODES": 0.979546248912811,
+        "DIFFERENT_CODES": 0.005060495808721,
+        "INSUFFICIENT_INFORMATION": 0.010713068768382,
+        "CONFLICTING_RECORDS": 0.004680193495005
+      }
+    }
+  ]
+}
