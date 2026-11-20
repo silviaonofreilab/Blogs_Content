@@ -1,0 +1,335 @@
+{
+  "metadata": {
+    "title": "MIMIC four-patient graph schema",
+    "version": "v4",
+    "format": "Descriptive graph contract with table context.",
+    "graph_file": "mimic-graph.json",
+    "graph_id": "mimic_decision_12tables_v2",
+    "dataset_version": "MIMIC-IV Clinical Database Demo 2.2",
+    "relationship_vocabulary_version": "v3"
+  },
+  "graph_document_fields": {
+    "metadata": "Graph identity, dataset, patient scope, provenance, table labels, join definitions and counts.",
+    "nodes": "Array conforming to node_common_fields and node_types.",
+    "relations": "Array conforming to relation_common_fields and relations."
+  },
+  "node_common_fields": {
+    "id": "Unique string: mimic-iv-demo:<version>:<source_table>:<source_row>; identifies one original CSV data record.",
+    "type": "One of the 12 node_types; used as the Neo4j entity label.",
+    "name": "Derived display string; may repeat. Diagnosis/Procedure use linked long_title; LabEvent uses its LabItem label.",
+    "properties": "Object with every source field listed in node_types[type].properties plus node_common_properties. Source fields are strings."
+  },
+  "node_common_properties": {
+    "_source_table": "string; exact source table path, matching node_types[type].source_table",
+    "_source_row": "positive integer; original CSV data-record index, excluding the header, not a physical line number"
+  },
+  "node_types": {
+    "Admission": {
+      "source_table": "hosp/admissions",
+      "properties": ["subject_id", "hadm_id", "admittime", "dischtime", "deathtime", "admission_type", "admit_provider_id", "admission_location", "discharge_location", "insurance", "language", "marital_status", "race", "edregtime", "edouttime", "hospital_expire_flag"]
+    },
+    "DiagnosisCode": {
+      "source_table": "hosp/d_icd_diagnoses",
+      "properties": ["icd_code", "icd_version", "long_title"]
+    },
+    "ProcedureCode": {
+      "source_table": "hosp/d_icd_procedures",
+      "properties": ["icd_code", "icd_version", "long_title"]
+    },
+    "LabItem": {
+      "source_table": "hosp/d_labitems",
+      "properties": ["itemid", "label", "fluid", "category"]
+    },
+    "Diagnosis": {
+      "source_table": "hosp/diagnoses_icd",
+      "properties": ["subject_id", "hadm_id", "seq_num", "icd_code", "icd_version"]
+    },
+    "MedAdmin": {
+      "source_table": "hosp/emar",
+      "properties": ["subject_id", "hadm_id", "emar_id", "emar_seq", "poe_id", "pharmacy_id", "enter_provider_id", "charttime", "medication", "event_txt", "scheduletime", "storetime"]
+    },
+    "MedAdminDetail": {
+      "source_table": "hosp/emar_detail",
+      "properties": ["subject_id", "emar_id", "emar_seq", "parent_field_ordinal", "administration_type", "pharmacy_id", "barcode_type", "reason_for_no_barcode", "complete_dose_not_given", "dose_due", "dose_due_unit", "dose_given", "dose_given_unit", "will_remainder_of_dose_be_given", "product_amount_given", "product_unit", "product_code", "product_description", "product_description_other", "prior_infusion_rate", "infusion_rate", "infusion_rate_adjustment", "infusion_rate_adjustment_amount", "infusion_rate_unit", "route", "infusion_complete", "completion_interval", "new_iv_bag_hung", "continued_infusion_in_other_location", "restart_interval", "side", "site", "non_formulary_visual_verification"]
+    },
+    "LabEvent": {
+      "source_table": "hosp/labevents",
+      "properties": ["labevent_id", "subject_id", "hadm_id", "specimen_id", "itemid", "order_provider_id", "charttime", "storetime", "value", "valuenum", "valueuom", "ref_range_lower", "ref_range_upper", "flag", "priority", "comments"]
+    },
+    "Patient": {
+      "source_table": "hosp/patients",
+      "properties": ["subject_id", "gender", "anchor_age", "anchor_year", "anchor_year_group", "dod"]
+    },
+    "PharmacyOrder": {
+      "source_table": "hosp/pharmacy",
+      "properties": ["subject_id", "hadm_id", "pharmacy_id", "poe_id", "starttime", "stoptime", "medication", "proc_type", "status", "entertime", "verifiedtime", "route", "frequency", "disp_sched", "infusion_type", "sliding_scale", "lockout_interval", "basal_rate", "one_hr_max", "doses_per_24_hrs", "duration", "duration_interval", "expiration_value", "expiration_unit", "expirationdate", "dispensation", "fill_quantity"]
+    },
+    "Prescription": {
+      "source_table": "hosp/prescriptions",
+      "properties": ["subject_id", "hadm_id", "pharmacy_id", "poe_id", "poe_seq", "order_provider_id", "starttime", "stoptime", "drug_type", "drug", "formulary_drug_cd", "gsn", "ndc", "prod_strength", "form_rx", "dose_val_rx", "dose_unit_rx", "form_val_disp", "form_unit_disp", "doses_per_24_hrs", "route"]
+    },
+    "Procedure": {
+      "source_table": "hosp/procedures_icd",
+      "properties": ["subject_id", "hadm_id", "seq_num", "chartdate", "icd_code", "icd_version"]
+    }
+  },
+  "relation_common_fields": {
+    "id": "Unique deterministic string derived from source ID, relation type and target ID.",
+    "source": "Existing source node id.",
+    "type": "One of the 20 types declared in relations.",
+    "target": "Existing target node id.",
+    "properties": "Object containing required _join_rule and optional _admission_id_mismatch only."
+  },
+  "relation_common_properties": {
+    "_join_rule": "Required J-prefixed string matching a relations[].join_rule. J numbers follow the original 31-table join design, so gaps are expected; J02 and J04 each have multiple declarations distinguished by relationship and target type.",
+    "_admission_id_mismatch": "Optional boolean true when both endpoint hadm_id values are nonempty and differ. Absence does not establish admission identity when either value is missing."
+  },
+  "relations": [
+    {
+      "join_rule": "J01",
+      "type": "HAD_ADMISSION",
+      "source_types": ["Patient"],
+      "target_types": ["Admission"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this hospital admission."
+    },
+    {
+      "join_rule": "J02",
+      "type": "HAD_RECORDED_DIAGNOSIS",
+      "source_types": ["Patient"],
+      "target_types": ["Diagnosis"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this recorded diagnosis assignment, including any history or other coding qualifiers."
+    },
+    {
+      "join_rule": "J02",
+      "type": "HAD_MEDICATION_RECORD",
+      "source_types": ["Patient"],
+      "target_types": ["MedAdmin"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this eMAR medication record; status and dose fields describe what was documented."
+    },
+    {
+      "join_rule": "J02",
+      "type": "HAD_MEDICATION_DETAIL",
+      "source_types": ["Patient"],
+      "target_types": ["MedAdminDetail"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this summary/component record belonging to an eMAR medication record."
+    },
+    {
+      "join_rule": "J02",
+      "type": "HAD_LAB_TEST",
+      "source_types": ["Patient"],
+      "target_types": ["LabEvent"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this recorded laboratory result, including results without an admission ID."
+    },
+    {
+      "join_rule": "J02",
+      "type": "HAD_PHARMACY_ORDER",
+      "source_types": ["Patient"],
+      "target_types": ["PharmacyOrder"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient has this medication-order record in the pharmacy system."
+    },
+    {
+      "join_rule": "J02",
+      "type": "WAS_PRESCRIBED",
+      "source_types": ["Patient"],
+      "target_types": ["Prescription"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient was prescribed the medication or order component recorded here."
+    },
+    {
+      "join_rule": "J02",
+      "type": "UNDERWENT",
+      "source_types": ["Patient"],
+      "target_types": ["Procedure"],
+      "join_on": ["subject_id"],
+      "meaning": "Patient underwent the hospital-billed procedure recorded here."
+    },
+    {
+      "join_rule": "J04",
+      "type": "RECORDED_DIAGNOSIS",
+      "source_types": ["Admission"],
+      "target_types": ["Diagnosis"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J04",
+      "type": "INCLUDED_MEDICATION_EVENT",
+      "source_types": ["Admission"],
+      "target_types": ["MedAdmin"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J04",
+      "type": "INCLUDED_LAB_TEST",
+      "source_types": ["Admission"],
+      "target_types": ["LabEvent"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J04",
+      "type": "INCLUDED_PHARMACY_ORDER",
+      "source_types": ["Admission"],
+      "target_types": ["PharmacyOrder"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J04",
+      "type": "INCLUDED_PRESCRIPTION",
+      "source_types": ["Admission"],
+      "target_types": ["Prescription"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J04",
+      "type": "INCLUDED_PROCEDURE",
+      "source_types": ["Admission"],
+      "target_types": ["Procedure"],
+      "join_on": ["subject_id", "hadm_id"],
+      "meaning": "Record explicitly identifies this patient and admission; no inferred admission links."
+    },
+    {
+      "join_rule": "J06",
+      "type": "FOR_PRESCRIPTION",
+      "source_types": ["PharmacyOrder"],
+      "target_types": ["Prescription"],
+      "join_on": ["subject_id", "pharmacy_id"],
+      "meaning": "Pharmacy order is linked to this prescription/component row by pharmacy_id; the link does not establish complete fulfillment."
+    },
+    {
+      "join_rule": "J07",
+      "type": "HAS_DOSE_DETAIL",
+      "source_types": ["MedAdmin"],
+      "target_types": ["MedAdminDetail"],
+      "join_on": ["subject_id", "emar_id"],
+      "meaning": "Medication event has this summary/component detail row."
+    },
+    {
+      "join_rule": "J09",
+      "type": "REFERENCES_PHARMACY_ORDER",
+      "source_types": ["MedAdmin"],
+      "target_types": ["PharmacyOrder"],
+      "join_on": ["subject_id", "pharmacy_id"],
+      "meaning": "Medication event explicitly references this pharmacy order; admission disagreements are flagged."
+    },
+    {
+      "join_rule": "J10",
+      "type": "REFERENCES_PHARMACY_ORDER",
+      "source_types": ["MedAdminDetail"],
+      "target_types": ["PharmacyOrder"],
+      "join_on": ["subject_id", "pharmacy_id"],
+      "meaning": "Medication detail explicitly references this pharmacy order; no admission identity is inferred."
+    },
+    {
+      "join_rule": "J14",
+      "type": "HAS_DIAGNOSIS_CODE",
+      "source_types": ["Diagnosis"],
+      "target_types": ["DiagnosisCode"],
+      "join_on": ["icd_code", "icd_version"],
+      "meaning": "Admission diagnosis is described by this exact ICD code/version definition."
+    },
+    {
+      "join_rule": "J15",
+      "type": "HAS_PROCEDURE_CODE",
+      "source_types": ["Procedure"],
+      "target_types": ["ProcedureCode"],
+      "join_on": ["icd_code", "icd_version"],
+      "meaning": "Admission procedure is described by this exact ICD code/version definition."
+    },
+    {
+      "join_rule": "J16",
+      "type": "MEASURES",
+      "source_types": ["LabEvent"],
+      "target_types": ["LabItem"],
+      "join_on": ["itemid"],
+      "meaning": "Laboratory result measures this laboratory test concept."
+    }
+  ],
+  "value_semantics": {
+    "storage": "All original CSV properties remain strings, including numeric, date and identifier fields. Preserve whitespace, leading zeros, blank cells and duplicate source rows.",
+    "missing_values": "An empty string retains a source blank. Its meaning is field-specific; for example, blank parent_field_ordinal identifies an event summary. Source property keys remain present. A blank is distinct from zero.",
+    "calculation": "Numeric quantities and timestamps are stored as source strings; blanks and non-scalar text do not supply a numeric value. Identifiers are textual keys, and unit fields qualify quantities.",
+    "time": "Dates are shifted with patient-specific offsets. This historical graph supplies no as_of or relation validity intervals. seq_num and source row order are not clinical event timestamps; chartdate has date-only precision.",
+    "scope": "The selected source tables are retained for the four patients; dictionary rows are limited to referenced keys. This is not a complete record of all care. Other table identifiers remain properties without implied nodes or relationships.",
+    "joins": "Each join_on field is nonempty and exactly equal at both endpoints. ICD joins include code and version. A pharmacy reference can retain disagreeing admission IDs; the mismatch flag records that source inconsistency."
+  },
+  "context_layer": {
+    "Admission": {
+      "meaning": "One hospital admission, identified by hadm_id and linked to its patient by subject_id.",
+      "interpretation": "admittime/dischtime delimit the hospital stay; edregtime/edouttime describe its emergency-department segment. deathtime and hospital_expire_flag concern in-hospital death. Repeated subject_id values represent separate admissions.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/admissions.html"
+    },
+    "DiagnosisCode": {
+      "meaning": "A reusable ICD diagnosis definition, identified by the pair icd_code and icd_version.",
+      "interpretation": "long_title describes the code. Leading zeros and qualifiers such as history, with, without and unspecified are part of its meaning. Patient/admission assignments are represented by linked Diagnosis nodes.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/d_icd_diagnoses.html"
+    },
+    "ProcedureCode": {
+      "meaning": "A reusable ICD procedure definition, identified by the pair icd_code and icd_version.",
+      "interpretation": "long_title describes the code. Patient/admission occurrences are represented by linked Procedure nodes; the dictionary itself has no patient or admission identifier.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/d_icd_procedures.html"
+    },
+    "LabItem": {
+      "meaning": "A laboratory test definition identified by itemid.",
+      "interpretation": "label names the test; fluid identifies specimen material; category groups tests. itemid links results to the test definition; display labels need not be unique. A LabItem is a concept, not a patient result.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/d_labitems.html"
+    },
+    "Diagnosis": {
+      "meaning": "An ICD diagnosis assigned to a particular hospital admission for billing.",
+      "interpretation": "subject_id/hadm_id set the scope; seq_num is billing priority, not onset time. HAS_DIAGNOSIS_CODE supplies the description. Discharge coding does not establish when a condition became known or whether a history qualifier denotes an active condition.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/diagnoses_icd.html"
+    },
+    "MedAdmin": {
+      "meaning": "An eMAR medication event, identified by subject_id and emar_id.",
+      "interpretation": "charttime is the recorded event time, scheduletime its scheduled time, and storetime its documentation time. event_txt may indicate administration, delay or non-administration; the label alone does not prove a dose was given. Dose evidence is in HAS_DOSE_DETAIL. Missing hadm_id remains unassigned.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/emar.html"
+    },
+    "MedAdminDetail": {
+      "meaning": "A summary or component record belonging to one eMAR event; several rows can describe the same event.",
+      "interpretation": "Blank parent_field_ordinal identifies the event summary; populated ordinals identify components of that same event. dose_due/dose_due_unit describe intended dose, dose_given/dose_given_unit recorded dose, and product_amount_given/product_unit product quantity. pharmacy_id may differ across rows. Admission context is available through the parent MedAdmin when its hadm_id is present.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/emar_detail.html"
+    },
+    "LabEvent": {
+      "meaning": "One laboratory result, identified by labevent_id; specimen_id can group multiple results from one specimen.",
+      "interpretation": "value holds result text; valuenum holds its numeric representation when available, stored as a string here. valueuom and the reference-range fields qualify the result. charttime usually reflects specimen collection; storetime reflects result availability. A blank hadm_id does not identify the encounter type; this graph contains no admission links inferred from time.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/labevents.html"
+    },
+    "Patient": {
+      "meaning": "One person identified by subject_id, with demographics and date-shifting anchors.",
+      "interpretation": "anchor_age is age in anchor_year; 91 represents an age over 89 at that anchor. anchor_year_group maps the shifted anchor to a real-year range. dod is the recorded death date; a blank value does not prove survival.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/patients.html"
+    },
+    "PharmacyOrder": {
+      "meaning": "A medication-order record in the pharmacy system, identified by pharmacy_id.",
+      "interpretation": "medication, route, frequency, starttime/stoptime and status describe the order; entertime/verifiedtime describe its processing. FOR_PRESCRIPTION can reach multiple prescription rows. Administration events are recorded separately in MedAdmin. A flagged pharmacy reference records disagreeing admission IDs.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/pharmacy.html"
+    },
+    "Prescription": {
+      "meaning": "A prescribed medication or order component; pharmacy_id is a linking field, not a unique prescription-row identifier.",
+      "interpretation": "drug_type distinguishes MAIN, BASE and ADDITIVE components. prod_strength is product composition; dose_val_rx/dose_unit_rx specify prescribed dose; doses_per_24_hrs gives frequency; route gives the intended route. starttime/stoptime describe the prescription period. Distinct source rows retain separate node IDs.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/prescriptions.html",
+      "route_codes": {
+        "PO": "oral",
+        "NG": "nasogastric",
+        "PO/NG": "oral or nasogastric",
+        "SC": "subcutaneous",
+        "IV": "intravenous"
+      }
+    },
+    "Procedure": {
+      "meaning": "An ICD procedure billed by the hospital for a particular admission.",
+      "interpretation": "subject_id/hadm_id set the scope; chartdate has date-only precision. seq_num is assigned priority and cannot establish within-day order. HAS_PROCEDURE_CODE supplies the description. These records cover hospital-billed procedures, not necessarily every procedure performed.",
+      "source": "https://mimic.mit.edu/docs/iv/modules/hosp/procedures_icd.html"
+    }
+  },
+  "integrity_constraints": ["Node IDs and relation IDs are unique; every relation endpoint exists.", "Every node has its declared source columns and the two common provenance properties; no source columns are renamed or removed.", "Every relation matches exactly one declaration by _join_rule, type, source type and target type, and satisfies its exact nonempty join fields.", "Each Diagnosis has exactly one HAS_DIAGNOSIS_CODE link to DiagnosisCode; each Procedure has exactly one HAS_PROCEDURE_CODE link to ProcedureCode; each LabEvent has exactly one MEASURES link.", "Different source rows stay distinct even when their values or display names coincide."]
+}

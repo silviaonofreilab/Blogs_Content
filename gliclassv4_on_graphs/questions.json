@@ -1,0 +1,3423 @@
+{
+  "metadata": {
+    "dataset": "MIMIC-IV Clinical Database Demo",
+    "dataset_version": "2.2",
+    "source_url": "https://physionet.org/content/mimic-iv-demo/2.2/",
+    "license": "ODbL-1.0",
+    "evidence_source": "mimic-graph.json; graph text contains original node properties and recorded relationships.",
+    "gold_status": "Q01-Q30 and Q41-Q48 (except Q46) labels derived from the local graph using the stated decision rules; Q31-Q40 and Q46 labels proposed by Claude from the standard clinical meaning of the recorded names (see gold_note) and checked by the author against the WHO ATC index, ICD-9-CM/ICD-10-CM code titles and MedlinePlus.",
+    "variants": "Q23-Q30, Q42 and Q48 copy an earlier question with edited evidence; see variant_of and perturbation. Their graph_text is not original MIMIC data.",
+    "semantic": "Q31-Q40 and Q46 test decisions that depend on the meaning of text in graph nodes; cypher_note says what a query-only approach would need. gold_note and cypher_note are not sent to the model.",
+    "contents": "48 questions: 22 with Cypher queries (Q01-Q22), 8 twins (Q23-Q30), 10 semantic questions (Q31-Q40), 7 lab and outcome questions (Q41-Q47: five with Cypher queries, the twin Q42 of Q41 and the semantic Q46) and Q48, a twin of Q17 with the same nodes and rewired edges."
+  },
+  "questions": [
+    {
+      "id": "Q01",
+      "question": "Should the admission 27703517 for the patient be flagged as a return within 0 through 30 calendar days inclusive after discharge from the admission 24597018?",
+      "cypher_query": "MATCH (a:Admission) WHERE a.name IN ['Admission 24597018', 'Admission 27703517'] RETURN collect(a{.name, .admittime, .dischtime}) AS admissions;",
+      "cypher_output": [
+        {
+          "admittime": "2157-11-18 22:56:00",
+          "dischtime": "2157-11-25 18:00:00",
+          "name": "Admission 24597018"
+        },
+        {
+          "admittime": "2157-12-18 16:58:00",
+          "dischtime": "2157-12-24 14:55:00",
+          "name": "Admission 27703517"
+        }
+      ],
+      "hops": 0,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "FLAG",
+          "description": "The specified return is within the inclusive 30-calendar-day rule."
+        },
+        {
+          "label": "DO_NOT_FLAG",
+          "description": "The specified return is later than that window."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]",
+        "A1 [Admission]: name=Admission 24597018; admittime=2157-11-18 22:56:00; dischtime=2157-11-25 18:00:00",
+        "A2 [Admission]: name=Admission 27703517; admittime=2157-12-18 16:58:00; dischtime=2157-12-24 14:55:00",
+        "P1 -HAD_ADMISSION-> A1",
+        "P1 -HAD_ADMISSION-> A2"
+      ],
+      "expected_answer": [
+        "FLAG"
+      ]
+    },
+    {
+      "id": "Q02",
+      "question": "In the admission with hadm_id 24597018, does the diagnosis with icd_code V161 document lung cancer in the patient, or a family history of that cancer?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '24597018'}) - [:RECORDED_DIAGNOSIS] -> (d:Diagnosis {icd_code: 'V161'}) RETURN d.name;",
+      "cypher_output": "Family history of malignant neoplasm of trachea, bronchus, and lung",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "FAMILY_HISTORY",
+          "description": "The specified code records a family history of the condition."
+        },
+        {
+          "label": "PATIENT_DIAGNOSIS",
+          "description": "The specified code records the condition in the patient."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        },
+        {
+          "label": "BOTH_FAMILY_AND_PATIENT",
+          "description": "The specified code records both the condition in the patient and a family history of it"
+        },
+        {
+          "label": "NEITHER_FAMILY_NOR_PATIENT",
+          "description": "The specified code records neither the condition in the patient nor a family history of it."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R02",
+          "rule": "Determine whether the supplied evidence records an active condition in the patient, a family history of the condition, neither, or both. Use the diagnosis descriptions and their qualifiers to make this distinction."
+        },
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=24597018",
+        "D1 [Diagnosis]: hadm_id=24597018; icd_code=V161; name=Family history of malignant neoplasm of trachea, bronchus, and lung",
+        "A1 -RECORDED_DIAGNOSIS-> D1"
+      ],
+      "expected_answer": [
+        "FAMILY_HISTORY"
+      ]
+    },
+    {
+      "id": "Q03",
+      "question": "Does the admission with hadm_id 25563031 record depression, anxiety, both, or neither of those diagnoses?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '25563031'}) -[:RECORDED_DIAGNOSIS]-> (d:Diagnosis) RETURN collect(d.name) AS diagnoses;",
+      "cypher_output": [
+        "Asthma, unspecified type, unspecified",
+        "Myalgia and myositis, unspecified",
+        "Prolapse of vaginal vault after hysterectomy",
+        "Constipation, unspecified",
+        "Irritable bowel syndrome",
+        "Other opiates and related narcotics causing adverse effects in therapeutic use",
+        "Vaginal enterocele, congenital or acquired",
+        "Attention deficit disorder with hyperactivity",
+        "Esophageal reflux",
+        "Personal history of tobacco use",
+        "Insomnia, unspecified",
+        "Other specified retention of urine",
+        "Depressive disorder, not elsewhere classified",
+        "Other anaphylactic reaction",
+        "Personal history of malignant neoplasm of cervix uteri",
+        "Essential and other specified forms of tremor",
+        "Anxiety state, unspecified",
+        "Other lymphedema"
+      ],
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BOTH",
+          "description": "Both named diagnosis categories are recorded."
+        },
+        {
+          "label": "DEPRESSION_ONLY",
+          "description": "Depression is recorded and anxiety is not."
+        },
+        {
+          "label": "ANXIETY_ONLY",
+          "description": "Anxiety is recorded and depression is not."
+        },
+        {
+          "label": "NEITHER_RECORDED",
+          "description": "Neither named diagnosis is in the complete admission diagnosis list."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=25563031",
+        "D1 [Diagnosis]: name=Asthma, unspecified type, unspecified",
+        "D2 [Diagnosis]: name=Myalgia and myositis, unspecified",
+        "D3 [Diagnosis]: name=Prolapse of vaginal vault after hysterectomy",
+        "D4 [Diagnosis]: name=Constipation, unspecified",
+        "D5 [Diagnosis]: name=Irritable bowel syndrome",
+        "D6 [Diagnosis]: name=Other opiates and related narcotics causing adverse effects in therapeutic use",
+        "D7 [Diagnosis]: name=Vaginal enterocele, congenital or acquired",
+        "D8 [Diagnosis]: name=Attention deficit disorder with hyperactivity",
+        "D9 [Diagnosis]: name=Esophageal reflux",
+        "D10 [Diagnosis]: name=Personal history of tobacco use",
+        "D11 [Diagnosis]: name=Insomnia, unspecified",
+        "D12 [Diagnosis]: name=Other specified retention of urine",
+        "D13 [Diagnosis]: name=Depressive disorder, not elsewhere classified",
+        "D14 [Diagnosis]: name=Other anaphylactic reaction",
+        "D15 [Diagnosis]: name=Personal history of malignant neoplasm of cervix uteri",
+        "D16 [Diagnosis]: name=Essential and other specified forms of tremor",
+        "D17 [Diagnosis]: name=Anxiety state, unspecified",
+        "D18 [Diagnosis]: name=Other lymphedema",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, D16, D17, D18]"
+      ],
+      "expected_answer": [
+        "BOTH"
+      ]
+    },
+    {
+      "id": "Q04",
+      "question": "In the admission with hadm_id 22595853, is the patient with id 10000032 coded as a current smoker or a former smoker?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '22595853', subject_id: '10000032'})-[:RECORDED_DIAGNOSIS]->(d:Diagnosis) RETURN collect(d.name) AS diagnoses;",
+      "cypher_output": [
+        "Chronic airway obstruction, not elsewhere classified",
+        "Cirrhosis of liver without mention of alcohol",
+        "Portal hypertension",
+        "Personal history of tobacco use",
+        "Other ascites",
+        "Unspecified viral hepatitis C without hepatic coma",
+        "Posttraumatic stress disorder",
+        "Bipolar disorder, unspecified"
+      ],
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "CURRENT_USE_AND_HISTORY",
+          "description": "Both current tobacco use and history codes are recorded."
+        },
+        {
+          "label": "CURRENT_USE",
+          "description": "Current tobacco use is recorded without the history code."
+        },
+        {
+          "label": "HISTORY_ONLY",
+          "description": "History is recorded without current tobacco use."
+        },
+        {
+          "label": "NEITHER_RECORDED",
+          "description": "Neither category is in the complete diagnosis list."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22595853; subject_id=10000032",
+        "D1 [Diagnosis]: name=Chronic airway obstruction, not elsewhere classified",
+        "D2 [Diagnosis]: name=Cirrhosis of liver without mention of alcohol",
+        "D3 [Diagnosis]: name=Portal hypertension",
+        "D4 [Diagnosis]: name=Personal history of tobacco use",
+        "D5 [Diagnosis]: name=Other ascites",
+        "D6 [Diagnosis]: name=Unspecified viral hepatitis C without hepatic coma",
+        "D7 [Diagnosis]: name=Posttraumatic stress disorder",
+        "D8 [Diagnosis]: name=Bipolar disorder, unspecified",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8]"
+      ],
+      "expected_answer": [
+        "HISTORY_ONLY"
+      ]
+    },
+    {
+      "id": "Q05",
+      "question": "During the admission 24597018, was the spinal tap recorded before or after the procedure described as Other incision of brain?",
+      "cypher_query": "MATCH (:Admission {name: 'Admission 24597018'})-[:INCLUDED_PROCEDURE]->(p:Procedure) RETURN collect(p{.name, .chartdate}) AS procedures;",
+      "cypher_output": [
+        {
+          "chartdate": "2157-11-19",
+          "name": "Spinal tap"
+        },
+        {
+          "chartdate": "2157-11-20",
+          "name": "Other incision of brain"
+        },
+        {
+          "chartdate": "2157-11-22",
+          "name": "Central venous catheter placement with guidance"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BEFORE",
+          "description": "The spinal tap date precedes the brain procedure date."
+        },
+        {
+          "label": "AFTER",
+          "description": "The spinal tap date follows the brain procedure date."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24597018",
+        "PR1 [Procedure]: name=Spinal tap; chartdate=2157-11-19",
+        "PR2 [Procedure]: name=Other incision of brain; chartdate=2157-11-20",
+        "PR3 [Procedure]: name=Central venous catheter placement with guidance; chartdate=2157-11-22",
+        "A1 -INCLUDED_PROCEDURE-> each of [PR1, PR2, PR3]"
+      ],
+      "expected_answer": [
+        "BEFORE"
+      ]
+    },
+    {
+      "id": "Q06",
+      "question": "On 2141-05-22, in admission 24982426, was left-heart sampling and pressure measurement performed before or after coronary-artery fluoroscopy?",
+      "cypher_query": "MATCH (:Admission {name: 'Admission 24982426'})-[:INCLUDED_PROCEDURE]->(p:Procedure) RETURN collect(p{.name, .chartdate}) AS procedures;",
+      "cypher_output": [
+        {
+          "chartdate": "2141-05-22",
+          "name": "Measurement of Cardiac Sampling and Pressure, Left Heart, Percutaneous Approach"
+        },
+        {
+          "chartdate": "2141-05-22",
+          "name": "Dilation of Coronary Artery, One Artery with Drug-eluting Intraluminal Device, Percutaneous Approach"
+        },
+        {
+          "chartdate": "2141-05-23",
+          "name": "Assistance with Cardiac Output using Balloon Pump, Continuous"
+        },
+        {
+          "chartdate": "2141-05-23",
+          "name": "Measurement of Cardiac Sampling and Pressure, Right Heart, Percutaneous Approach"
+        },
+        {
+          "chartdate": "2141-05-23",
+          "name": "Irrigation of Genitourinary Tract using Irrigating Substance, Via Natural or Artificial Opening"
+        },
+        {
+          "chartdate": "2141-05-23",
+          "name": "Fluoroscopy of Multiple Coronary Arteries using Other Contrast"
+        },
+        {
+          "chartdate": "2141-05-22",
+          "name": "Fluoroscopy of Multiple Coronary Arteries using Other Contrast"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BEFORE",
+          "description": "Evidence establishes left-heart sampling before coronary fluoroscopy."
+        },
+        {
+          "label": "AFTER",
+          "description": "Evidence establishes left-heart sampling after coronary fluoroscopy."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24982426",
+        "PR1 [Procedure]: name=Measurement of Cardiac Sampling and Pressure, Left Heart, Percutaneous Approach; chartdate=2141-05-22",
+        "PR2 [Procedure]: name=Dilation of Coronary Artery, One Artery with Drug-eluting Intraluminal Device, Percutaneous Approach; chartdate=2141-05-22",
+        "PR3 [Procedure]: name=Assistance with Cardiac Output using Balloon Pump, Continuous; chartdate=2141-05-23",
+        "PR4 [Procedure]: name=Measurement of Cardiac Sampling and Pressure, Right Heart, Percutaneous Approach; chartdate=2141-05-23",
+        "PR5 [Procedure]: name=Irrigation of Genitourinary Tract using Irrigating Substance, Via Natural or Artificial Opening; chartdate=2141-05-23",
+        "PR6 [Procedure]: name=Fluoroscopy of Multiple Coronary Arteries using Other Contrast; chartdate=2141-05-23",
+        "PR7 [Procedure]: name=Fluoroscopy of Multiple Coronary Arteries using Other Contrast; chartdate=2141-05-22",
+        "A1 -INCLUDED_PROCEDURE-> each of [PR1, PR2, PR3, PR4, PR5, PR6, PR7]"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ]
+    },
+    {
+      "id": "Q07",
+      "question": "For the lactulose pharmacy order with id 13724136 given in admission 22841357, what numeric amount was prescribed per dose?",
+      "cypher_query": "MATCH (:Admission {name: 'Admission 22841357'})-[:INCLUDED_PRESCRIPTION]->(rx:Prescription {pharmacy_id: '13724136'}) WHERE toLower(rx.drug) = 'lactulose' RETURN collect(rx{.drug_type, .drug, .prod_strength, .dose_val_rx, .dose_unit_rx, .form_val_disp, .form_unit_disp, .doses_per_24_hrs}) AS prescriptions;",
+      "cypher_output": [
+        {
+          "dose_unit_rx": "mL",
+          "dose_val_rx": "30",
+          "doses_per_24_hrs": "3",
+          "drug": "Lactulose",
+          "drug_type": "MAIN",
+          "form_unit_disp": "UDCUP",
+          "form_val_disp": "1",
+          "prod_strength": "20g/30mL Cup"
+        }
+      ],
+      "hops": 1,
+      "question_type": "lookup",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "DOSE_1",
+          "description": "1"
+        },
+        {
+          "label": "DOSE_3",
+          "description": "3"
+        },
+        {
+          "label": "DOSE_20",
+          "description": "20"
+        },
+        {
+          "label": "DOSE_30",
+          "description": "30"
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 22841357",
+        "RX1 [Prescription]: drug_type=MAIN; drug=Lactulose; prod_strength=20g/30mL Cup; dose_val_rx=30; dose_unit_rx=mL; form_val_disp=1; form_unit_disp=UDCUP; doses_per_24_hrs=3",
+        "A1 -INCLUDED_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "DOSE_30"
+      ]
+    },
+    {
+      "id": "Q08",
+      "question": "For the lactulose order with pharmacy_id 13724136 in the admission 22841357, what unit was recorded for the prescribed dose?",
+      "cypher_query": "MATCH (:Admission {name: 'Admission 22841357'})-[:INCLUDED_PRESCRIPTION]->(rx:Prescription {pharmacy_id: '13724136'}) WHERE toLower(rx.drug) = 'lactulose' RETURN collect(rx{.drug_type, .drug, .prod_strength, .dose_val_rx, .dose_unit_rx, .form_val_disp, .form_unit_disp, .doses_per_24_hrs}) AS prescriptions;",
+      "cypher_output": [
+        {
+          "dose_unit_rx": "mL",
+          "dose_val_rx": "30",
+          "doses_per_24_hrs": "3",
+          "drug": "Lactulose",
+          "drug_type": "MAIN",
+          "form_unit_disp": "UDCUP",
+          "form_val_disp": "1",
+          "prod_strength": "20g/30mL Cup"
+        }
+      ],
+      "hops": 1,
+      "question_type": "lookup",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "UNIT_G",
+          "description": "g"
+        },
+        {
+          "label": "UNIT_MG",
+          "description": "mg"
+        },
+        {
+          "label": "UNIT_ML",
+          "description": "mL"
+        },
+        {
+          "label": "UNIT_UDCUP",
+          "description": "UDCUP"
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22841357; subject_id=10000032",
+        "RX1 [Prescription]: pharmacy_id=13724136; drug_type=MAIN; drug=Lactulose; prod_strength=20g/30mL Cup; dose_val_rx=30; dose_unit_rx=mL; form_val_disp=1; form_unit_disp=UDCUP; doses_per_24_hrs=3",
+        "A1 -INCLUDED_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "UNIT_ML"
+      ]
+    },
+    {
+      "id": "Q09",
+      "question": "In the admission 24597018, did the earliest meropenem prescription start before or after the brain procedure?",
+      "cypher_query": "MATCH (a:Admission {name: 'Admission 24597018'})-[:INCLUDED_PROCEDURE]->(p:Procedure) WITH a, collect(p{.name, .chartdate}) AS procedures MATCH (a)-[:INCLUDED_PRESCRIPTION]->(rx:Prescription) WHERE toLower(rx.drug) = 'meropenem' RETURN procedures, collect(rx{.drug, .starttime}) AS prescriptions;",
+      "cypher_output": {
+        "procedures": [
+          {
+            "name": "Spinal tap",
+            "chartdate": "2157-11-19"
+          },
+          {
+            "name": "Other incision of brain",
+            "chartdate": "2157-11-20"
+          },
+          {
+            "name": "Central venous catheter placement with guidance",
+            "chartdate": "2157-11-22"
+          }
+        ],
+        "prescriptions": [
+          {
+            "drug": "Meropenem",
+            "pharmacy_id": "94224066",
+            "starttime": "2157-11-20 13:00:00"
+          },
+          {
+            "drug": "Meropenem",
+            "pharmacy_id": "56786718",
+            "starttime": "2157-11-20 19:00:00"
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BEFORE",
+          "description": "The earliest meropenem prescription starts on a date before the brain procedure."
+        },
+        {
+          "label": "AFTER",
+          "description": "The earliest meropenem prescription starts on a date after the brain procedure."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24597018",
+        "PR1 [Procedure]: name=Spinal tap; chartdate=2157-11-19",
+        "PR2 [Procedure]: name=Other incision of brain; chartdate=2157-11-20",
+        "PR3 [Procedure]: name=Central venous catheter placement with guidance; chartdate=2157-11-22",
+        "RX1 [Prescription]: drug=Meropenem; starttime=2157-11-20 13:00:00",
+        "RX2 [Prescription]: drug=Meropenem; starttime=2157-11-20 19:00:00",
+        "A1 -INCLUDED_PROCEDURE-> each of [PR1, PR2, PR3]",
+        "A1 -INCLUDED_PRESCRIPTION-> each of [RX1, RX2]"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ]
+    },
+    {
+      "id": "Q10",
+      "question": "Does admission with hadm_id 25742920 fall within 0 through 30 calendar days inclusive of the most recent preceding discharge for the patient 10000032? Compare discharge and admission dates, not elapsed hours.",
+      "cypher_query": "MATCH (:Patient {name: 'Patient 10000032'})-[:HAD_ADMISSION]->(a:Admission) RETURN collect(a{.hadm_id, .admittime, .dischtime}) AS admissions;",
+      "cypher_output": [
+        {
+          "admittime": "2180-05-06 22:23:00",
+          "dischtime": "2180-05-07 17:15:00",
+          "hadm_id": "22595853"
+        },
+        {
+          "admittime": "2180-06-26 18:27:00",
+          "dischtime": "2180-06-27 18:49:00",
+          "hadm_id": "22841357"
+        },
+        {
+          "admittime": "2180-08-05 23:44:00",
+          "dischtime": "2180-08-07 17:50:00",
+          "hadm_id": "25742920"
+        },
+        {
+          "admittime": "2180-07-23 12:35:00",
+          "dischtime": "2180-07-25 17:55:00",
+          "hadm_id": "29079034"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "The return is within 30 calendar days of the most recent preceding discharge."
+        },
+        {
+          "label": "NO",
+          "description": "The return is later than 30 calendar days after that discharge."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: name=Patient 10000032",
+        "A1 [Admission]: hadm_id=22595853; admittime=2180-05-06 22:23:00; dischtime=2180-05-07 17:15:00",
+        "A2 [Admission]: hadm_id=22841357; admittime=2180-06-26 18:27:00; dischtime=2180-06-27 18:49:00",
+        "A3 [Admission]: hadm_id=25742920; admittime=2180-08-05 23:44:00; dischtime=2180-08-07 17:50:00",
+        "A4 [Admission]: hadm_id=29079034; admittime=2180-07-23 12:35:00; dischtime=2180-07-25 17:55:00",
+        "P1 -HAD_ADMISSION-> each of [A1, A2, A3, A4]"
+      ],
+      "expected_answer": [
+        "YES"
+      ]
+    },
+    {
+      "id": "Q11",
+      "question": "Can the Heparin event with emar_id 10000032-42 be accepted as a confirmed 5,000 UNIT administration?",
+      "cypher_query": "MATCH (m:MedAdmin {emar_id: '10000032-42'})-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) RETURN m{.emar_id, .medication, .event_txt} AS event, collect(d{.parent_field_ordinal, .dose_due, .dose_due_unit, .dose_given, .dose_given_unit, .product_amount_given, .product_unit, .complete_dose_not_given}) AS dose_details;",
+      "cypher_output": {
+        "event": [
+          {
+            "emar_id": "10000032-42",
+            "event_txt": "Not Given",
+            "medication": "Heparin"
+          }
+        ],
+        "dose_details": [
+          {
+            "complete_dose_not_given": "",
+            "dose_due": "",
+            "dose_due_unit": "",
+            "dose_given": "5000",
+            "dose_given_unit": "UNIT",
+            "parent_field_ordinal": "1.1",
+            "product_amount_given": "1",
+            "product_unit": "mL"
+          },
+          {
+            "complete_dose_not_given": "No",
+            "dose_due": "5000",
+            "dose_due_unit": "UNIT",
+            "dose_given": "",
+            "dose_given_unit": "",
+            "parent_field_ordinal": "",
+            "product_amount_given": "",
+            "product_unit": ""
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "NOT_GIVEN",
+          "description": "The complete event evidence supports non-administration."
+        },
+        {
+          "label": "CONFIRMED_5000_UNIT",
+          "description": "The event and dose components consistently document administration of 5,000 UNIT."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-42; medication=Heparin; event_txt=Not Given",
+        "MD1 [MedAdminDetail]: parent_field_ordinal=1.1; dose_due=\"\"; dose_due_unit=\"\"; dose_given=5000; dose_given_unit=UNIT; product_amount_given=1; product_unit=mL; complete_dose_not_given=\"\"",
+        "MD2 [MedAdminDetail]: parent_field_ordinal=\"\"; dose_due=5000; dose_due_unit=UNIT; dose_given=\"\"; dose_given_unit=\"\"; product_amount_given=\"\"; product_unit=\"\"; complete_dose_not_given=No",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]"
+      ],
+      "expected_answer": [
+        "CONFLICTING_RECORDS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "question": "For the medication record with emar_id 10000032-13, was albuterol recorded as administered within 30 minutes before or after the scheduled time? Count exactly 30 minutes early or late as within the allowed window.",
+      "cypher_query": "MATCH (m:MedAdmin {emar_id: '10000032-13'})-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) RETURN m{.emar_id, .medication, .event_txt, .charttime, .scheduletime, .storetime} AS event, collect(d{.parent_field_ordinal, .dose_due, .dose_due_unit, .dose_given, .dose_given_unit, .product_amount_given, .product_unit, .complete_dose_not_given}) AS dose_details;",
+      "cypher_output": {
+        "event": [
+          {
+            "charttime": "2180-05-07 05:00:00",
+            "emar_id": "10000032-13",
+            "event_txt": "Administered",
+            "medication": "Albuterol Inhaler",
+            "scheduletime": "2180-05-07 06:29:00",
+            "storetime": "2180-05-07 06:29:00"
+          }
+        ],
+        "dose_details": [
+          {
+            "complete_dose_not_given": "",
+            "dose_due": "",
+            "dose_due_unit": "",
+            "dose_given": "2",
+            "dose_given_unit": "PUFF",
+            "parent_field_ordinal": "1.1",
+            "product_amount_given": "",
+            "product_unit": ""
+          },
+          {
+            "complete_dose_not_given": "No",
+            "dose_due": "2",
+            "dose_due_unit": "PUFF",
+            "dose_given": "",
+            "dose_given_unit": "",
+            "parent_field_ordinal": "",
+            "product_amount_given": "",
+            "product_unit": ""
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "WITHIN_WINDOW",
+          "description": "Confirmed administration is within 30 minutes before or after its scheduled time."
+        },
+        {
+          "label": "OUTSIDE_WINDOW",
+          "description": "Confirmed administration is more than 30 minutes before or after its scheduled time."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-13; medication=Albuterol Inhaler; event_txt=Administered; charttime=2180-05-07 05:00:00; scheduletime=2180-05-07 06:29:00; storetime=2180-05-07 06:29:00",
+        "MD1 [MedAdminDetail]: parent_field_ordinal=1.1; dose_due=\"\"; dose_due_unit=\"\"; dose_given=2; dose_given_unit=PUFF; product_amount_given=\"\"; product_unit=\"\"; complete_dose_not_given=\"\"",
+        "MD2 [MedAdminDetail]: parent_field_ordinal=\"\"; dose_due=2; dose_due_unit=PUFF; dose_given=\"\"; dose_given_unit=\"\"; product_amount_given=\"\"; product_unit=\"\"; complete_dose_not_given=No",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]"
+      ],
+      "expected_answer": [
+        "OUTSIDE_WINDOW"
+      ]
+    },
+    {
+      "id": "Q13",
+      "question": "Does the medication record emar_id 10002495-11 confirm that hydralazine was administered?",
+      "cypher_query": "MATCH (m:MedAdmin {emar_id: '10002495-11'})-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) RETURN m{.emar_id, .medication, .event_txt} AS event, collect(d{.dose_due, .dose_due_unit, .dose_given, .dose_given_unit, .product_amount_given, .complete_dose_not_given}) AS dose_details;",
+      "cypher_output": {
+        "event": [
+          {
+            "emar_id": "10002495-11",
+            "event_txt": "Not Given",
+            "medication": "HydrALAzine"
+          }
+        ],
+        "dose_details": [
+          {
+            "complete_dose_not_given": "",
+            "dose_due": "",
+            "dose_due_unit": "",
+            "dose_given": "10",
+            "dose_given_unit": "mg",
+            "product_amount_given": "1"
+          },
+          {
+            "complete_dose_not_given": "No",
+            "dose_due": "10",
+            "dose_due_unit": "mg",
+            "dose_given": "",
+            "dose_given_unit": "",
+            "product_amount_given": ""
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "The event supports administration of a positive amount."
+        },
+        {
+          "label": "NO",
+          "description": "The complete event evidence supports non-administration."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10002495-11; medication=HydrALAzine; event_txt=Not Given",
+        "MD1 [MedAdminDetail]: dose_due=\"\"; dose_due_unit=\"\"; dose_given=10; dose_given_unit=mg; product_amount_given=1; complete_dose_not_given=\"\"",
+        "MD2 [MedAdminDetail]: dose_due=10; dose_due_unit=mg; dose_given=\"\"; dose_given_unit=\"\"; product_amount_given=\"\"; complete_dose_not_given=No",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]"
+      ],
+      "expected_answer": [
+        "CONFLICTING_RECORDS"
+      ]
+    },
+    {
+      "id": "Q14",
+      "question": "For the emar_id 10000032-23 record, was furosemide recorded as administered within the active window (start to stop time) of its referenced pharmacy order?",
+      "cypher_query": "MATCH (m:MedAdmin {emar_id: '10000032-23'})-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) WITH m, collect(d{.dose_due, .dose_due_unit, .dose_given, .dose_given_unit, .product_amount_given, .product_unit, .complete_dose_not_given}) AS dose_details MATCH (m)-[:REFERENCES_PHARMACY_ORDER]->(o:PharmacyOrder) RETURN m{.emar_id, .medication, .event_txt, .charttime, .scheduletime, .storetime} AS event, dose_details, collect(o{.pharmacy_id, .medication, .starttime, .stoptime}) AS pharmacy_orders;",
+      "cypher_output": {
+        "event": [
+          {
+            "charttime": "2180-05-07 11:54:00",
+            "emar_id": "10000032-23",
+            "event_txt": "Administered",
+            "medication": "Furosemide",
+            "scheduletime": "2180-05-07 10:00:00",
+            "storetime": "2180-05-07 11:54:00"
+          }
+        ],
+        "dose_details": [
+          {
+            "dose_due": "",
+            "dose_given": "40",
+            "dose_due_unit": "",
+            "dose_given_unit": "mg",
+            "product_unit": "TAB",
+            "complete_dose_not_given": "",
+            "product_amount_given": "1"
+          },
+          {
+            "dose_due": "40",
+            "dose_given": "",
+            "dose_due_unit": "mg",
+            "dose_given_unit": "",
+            "product_unit": "",
+            "complete_dose_not_given": "No",
+            "product_amount_given": ""
+          }
+        ],
+        "pharmacy_orders": [
+          {
+            "medication": "Furosemide",
+            "pharmacy_id": "19796602",
+            "starttime": "2180-05-08 08:00:00",
+            "stoptime": "2180-05-07 22:00:00"
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "Confirmed administration occurred within the inclusive order interval."
+        },
+        {
+          "label": "NO",
+          "description": "Confirmed administration occurred outside that interval."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        },
+        {
+          "id": "R11",
+          "rule": "A pharmacy order is active between its start and stop times."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-23; medication=Furosemide; event_txt=Administered; charttime=2180-05-07 11:54:00; scheduletime=2180-05-07 10:00:00; storetime=2180-05-07 11:54:00",
+        "MD1 [MedAdminDetail]: dose_due=\"\"; dose_due_unit=\"\"; dose_given=40; dose_given_unit=mg; product_amount_given=1; product_unit=TAB; complete_dose_not_given=\"\"",
+        "MD2 [MedAdminDetail]: dose_due=40; dose_due_unit=mg; dose_given=\"\"; dose_given_unit=\"\"; product_amount_given=\"\"; product_unit=\"\"; complete_dose_not_given=No",
+        "O1 [PharmacyOrder]: pharmacy_id=19796602; medication=Furosemide; starttime=2180-05-08 08:00:00; stoptime=2180-05-07 22:00:00",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1"
+      ],
+      "expected_answer": [
+        "CONFLICTING_RECORDS"
+      ]
+    },
+    {
+      "id": "Q15",
+      "question": "In the admission 24982426, were the influenza and pneumococcal vaccines each recorded as administered or as not given?",
+      "cypher_query": "MATCH (a:Admission {name: 'Admission 24982426'}) OPTIONAL MATCH (a)-[:INCLUDED_MEDICATION_EVENT]->(m:MedAdmin) WHERE toLower(m.medication) CONTAINS toLower('vaccine') RETURN a.hadm_id AS hadm_id, collect(m{.emar_id, .medication, .event_txt}) AS events;",
+      "cypher_output": {
+        "hadm_id": "24982426",
+        "events": [
+          {
+            "emar_id": "10002495-58",
+            "event_txt": "Not Given",
+            "medication": "PNEUMOcoccal 23-valent polysaccharide vaccine"
+          },
+          {
+            "emar_id": "10002495-59",
+            "event_txt": "Administered",
+            "medication": "Influenza Vaccine Quadrivalent"
+          }
+        ]
+      },
+      "hops": 1,
+      "question_type": "lookup",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BOTH",
+          "description": "Both vaccines are recorded as administered."
+        },
+        {
+          "label": "NEITHER_GIVEN",
+          "description": "Both vaccines are recorded as not given."
+        },
+        {
+          "label": "INFLUENZA_ONLY",
+          "description": "Influenza vaccine is recorded as administered; pneumococcal vaccine is recorded as not given."
+        },
+        {
+          "label": "PNEUMOCOCCAL_ONLY",
+          "description": "Pneumococcal vaccine is recorded as administered; influenza vaccine is recorded as not given."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24982426",
+        "M1 [MedAdmin]: emar_id=10002495-58; medication=PNEUMOcoccal 23-valent polysaccharide vaccine; event_txt=Not Given",
+        "M2 [MedAdmin]: emar_id=10002495-59; medication=Influenza Vaccine Quadrivalent; event_txt=Administered",
+        "A1 -INCLUDED_MEDICATION_EVENT-> each of [M1, M2]"
+      ],
+      "expected_answer": [
+        "INFLUENZA_ONLY"
+      ]
+    },
+    {
+      "id": "Q16",
+      "question": "Does the total recorded administered dose of albumin from the events with emar_id 10000032-49 and emar_id 10000032-50 equal, fall below, or exceed the dose prescribed for pharmacy order 77278287?",
+      "cypher_query": "MATCH (m:MedAdmin) WHERE m.emar_id IN ['10000032-49', '10000032-50'] OPTIONAL MATCH (m)-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) WITH m, collect(d{.dose_given, .dose_given_unit}) AS dose_details OPTIONAL MATCH (m)-[:REFERENCES_PHARMACY_ORDER]->(o:PharmacyOrder) OPTIONAL MATCH (o)-[:FOR_PRESCRIPTION]->(rx:Prescription) RETURN m{.emar_id, .medication, .event_txt} AS event, dose_details, collect(rx{.drug, .dose_val_rx, .dose_unit_rx}) AS prescriptions;",
+      "cypher_output": {
+        "events": [
+          {
+            "emar_id": "10000032-49",
+            "event_txt": "Partial Administered",
+            "medication": "Albumin 25% (12.5g / 50mL)"
+          }
+        ],
+        "dose_details": [
+          [
+            {
+              "dose_given": "12.5",
+              "dose_given_unit": "g"
+            },
+            {
+              "dose_given": "",
+              "dose_given_unit": ""
+            }
+          ]
+        ],
+        "prescriptions": [
+          [
+            {
+              "dose_unit_rx": "g",
+              "dose_val_rx": "37.5",
+              "drug": "Albumin 25% (12.5g / 50mL)"
+            }
+          ]
+        ]
+      },
+      "hops": 2,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "FULL_DOSE",
+          "description": "The two named events document exactly the prescribed dose."
+        },
+        {
+          "label": "PARTIAL_DOSE",
+          "description": "The two named events document a positive amount below the prescribed dose."
+        },
+        {
+          "label": "EXCEEDS_PRESCRIBED_DOSE",
+          "description": "The two named events document more than the prescribed dose."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R05",
+          "rule": "Count each medication administration event once. When calculating dose totals, count each administered quantity once, including quantities represented by both summary and component records."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-49; medication=Albumin 25% (12.5g / 50mL); event_txt=Partial Administered",
+        "M2 [MedAdmin]: emar_id=10000032-50; medication=Albumin 25% (12.5g / 50mL); event_txt=Partial Administered",
+        "MD1 [MedAdminDetail]: dose_given=12.5; dose_given_unit=g",
+        "MD2 [MedAdminDetail]: dose_given=12.5; dose_given_unit=g",
+        "MD3 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "MD4 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "O1 [PharmacyOrder]: pharmacy_id=77278287",
+        "RX1 [Prescription]: drug=Albumin 25% (12.5g / 50mL); dose_val_rx=37.5; dose_unit_rx=g",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD3, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1",
+        "M2 -HAS_DOSE_DETAIL-> each of [MD4, MD1]",
+        "M2 -REFERENCES_PHARMACY_ORDER-> O1",
+        "O1 -FOR_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "PARTIAL_DOSE"
+      ]
+    },
+    {
+      "id": "Q17",
+      "question": "Across the two admissions with intracranial abscess for the patient 10001217, are the sets of recorded streptococcal diagnosis codes the same or different?",
+      "cypher_query": "MATCH (:Patient {name: 'Patient 10001217'})-[:HAD_ADMISSION]->(a:Admission) MATCH (a)-[:RECORDED_DIAGNOSIS]->(:Diagnosis {name: 'Intracranial abscess'}) WITH DISTINCT a OPTIONAL MATCH (a)-[:RECORDED_DIAGNOSIS]->(d:Diagnosis) WHERE toLower(d.name) CONTAINS 'streptococc' RETURN a.hadm_id AS hadm_id, collect(d{.icd_code, .name}) AS diagnoses;",
+      "cypher_output": [
+        {
+          "hadm_id": "24597018",
+          "diagnoses": [
+            {
+              "icd_code": "04109",
+              "name": "Streptococcus infection in conditions classified elsewhere and of unspecified site, other streptococcus"
+            }
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "diagnoses": [
+            {
+              "icd_code": "04102",
+              "name": "Streptococcus infection in conditions classified elsewhere and of unspecified site, streptococcus, group B"
+            }
+          ]
+        }
+      ],
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "SAME_CODES",
+          "description": "Both qualifying admissions have the same nonempty set of streptococcal diagnosis codes."
+        },
+        {
+          "label": "DIFFERENT_CODES",
+          "description": "Both qualifying admissions have recorded streptococcal diagnoses, but their sets of codes differ."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        },
+        {
+          "id": "R09",
+          "rule": "Establish qualification using the supplied record properties and graph links if provided. Deduplicate by the identity requested in the question."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: subject_id=10001217",
+        "A1 [Admission]: hadm_id=24597018",
+        "A2 [Admission]: hadm_id=27703517",
+        "D1 [Diagnosis]: icd_code=3240; name=Intracranial abscess",
+        "D2 [Diagnosis]: icd_code=04109; name=Streptococcus infection in conditions classified elsewhere and of unspecified site, other streptococcus",
+        "D3 [Diagnosis]: icd_code=04102; name=Streptococcus infection in conditions classified elsewhere and of unspecified site, streptococcus, group B",
+        "D4 [Diagnosis]: icd_code=04184; name=Other specified bacterial infections in conditions classified elsewhere and of unspecified site, other anaerobes",
+        "P1 -HAD_ADMISSION-> each of [A1, A2]",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A2 -RECORDED_DIAGNOSIS-> each of [D1, D3, D4]"
+      ],
+      "expected_answer": [
+        "DIFFERENT_CODES"
+      ]
+    },
+    {
+      "id": "Q18",
+      "question": "Does the dose recorded in the medication administration 10000032-23 of furosemide match the dose in its referenced prescription?",
+      "cypher_query": "MATCH (m:MedAdmin {emar_id: '10000032-23'}) OPTIONAL MATCH (m)-[:HAS_DOSE_DETAIL]->(d:MedAdminDetail) WITH m, collect(d{.dose_given, .dose_given_unit}) AS dose_details OPTIONAL MATCH (m)-[:REFERENCES_PHARMACY_ORDER]->(o:PharmacyOrder) OPTIONAL MATCH (o)-[:FOR_PRESCRIPTION]->(rx:Prescription) RETURN m{.emar_id, .medication, .event_txt} AS event, dose_details, o.pharmacy_id AS pharmacy_id, collect(rx{.drug, .dose_val_rx, .dose_unit_rx}) AS prescriptions;",
+      "cypher_output": {
+        "event": {
+          "emar_id": "10000032-23",
+          "event_txt": "Administered",
+          "medication": "Furosemide"
+        },
+        "dose_details": [
+          {
+            "dose_given": "40",
+            "dose_given_unit": "mg"
+          },
+          {
+            "dose_given": "",
+            "dose_given_unit": ""
+          }
+        ],
+        "pharmacy_id": "19796602",
+        "prescriptions": [
+          {
+            "dose_unit_rx": "mg",
+            "dose_val_rx": "40",
+            "drug": "Furosemide"
+          }
+        ]
+      },
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "MATCH",
+          "description": "The reconciled administered dose equals the prescribed dose in compatible units."
+        },
+        {
+          "label": "MISMATCH",
+          "description": "The reconciled administered and prescribed doses are known but unequal."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R05",
+          "rule": "Count each medication administration event once. When calculating dose totals, count each administered quantity once, including quantities represented by both summary and component records."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-23; medication=Furosemide; event_txt=Administered",
+        "MD1 [MedAdminDetail]: dose_given=40; dose_given_unit=mg",
+        "MD2 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "O1 [PharmacyOrder]: pharmacy_id=19796602",
+        "RX1 [Prescription]: drug=Furosemide; dose_val_rx=40; dose_unit_rx=mg",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1",
+        "O1 -FOR_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "MATCH"
+      ]
+    },
+    {
+      "id": "Q19",
+      "question": "Patient 10001217 had two admissions with intracranial abscess recorded. Was compression of brain also recorded in both admissions, only one, or neither?",
+      "cypher_query": "MATCH (:Patient {subject_id: '10001217'})-[:HAD_ADMISSION]->(a:Admission) MATCH (a)-[:RECORDED_DIAGNOSIS]->(qualifying:Diagnosis) WHERE toLower(qualifying.name) = 'intracranial abscess' WITH DISTINCT a MATCH (a)-[:RECORDED_DIAGNOSIS]->(d:Diagnosis) WHERE toLower(d.name) IN ['intracranial abscess', 'compression of brain'] RETURN a.hadm_id AS hadm_id, collect(d.name) AS diagnoses;",
+      "cypher_output": [
+        {
+          "hadm_id": "24597018",
+          "diagnoses": [
+            "Compression of brain",
+            "Intracranial abscess"
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "diagnoses": [
+            "Intracranial abscess"
+          ]
+        }
+      ],
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BOTH",
+          "description": "Brain compression is recorded in both qualifying admissions."
+        },
+        {
+          "label": "ONE",
+          "description": "Brain compression is recorded in exactly one qualifying admission."
+        },
+        {
+          "label": "NEITHER_RECORDED",
+          "description": "Brain compression is absent from both complete diagnosis lists."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        },
+        {
+          "id": "R09",
+          "rule": "Establish qualification using the supplied record properties and graph links if provided. Deduplicate by the identity requested in the question."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: name=Patient 10001217",
+        "A1 [Admission]: hadm_id=24597018",
+        "A2 [Admission]: hadm_id=27703517",
+        "D1 [Diagnosis]: name=Family history of other specified malignant neoplasm",
+        "D2 [Diagnosis]: name=Family history of malignant neoplasm of trachea, bronchus, and lung",
+        "D3 [Diagnosis]: name=Streptococcus infection in conditions classified elsewhere and of unspecified site, other streptococcus",
+        "D4 [Diagnosis]: name=Cerebral edema",
+        "D5 [Diagnosis]: name=Unspecified essential hypertension",
+        "D6 [Diagnosis]: name=Compression of brain",
+        "D7 [Diagnosis]: name=Intracranial abscess",
+        "D8 [Diagnosis]: name=Multiple sclerosis",
+        "D9 [Diagnosis]: name=Pulmonary collapse",
+        "D10 [Diagnosis]: name=Tobacco use disorder",
+        "D11 [Diagnosis]: name=Multiple sclerosis",
+        "D12 [Diagnosis]: name=Cerebral edema",
+        "D13 [Diagnosis]: name=Intracranial abscess",
+        "D14 [Diagnosis]: name=Tobacco use disorder",
+        "D15 [Diagnosis]: name=Streptococcus infection in conditions classified elsewhere and of unspecified site, streptococcus, group B",
+        "D16 [Diagnosis]: name=Other specified bacterial infections in conditions classified elsewhere and of unspecified site, other anaerobes",
+        "D17 [Diagnosis]: name=Unspecified essential hypertension",
+        "A2 -RECORDED_DIAGNOSIS-> each of [D11, D12, D13, D14, D15, D16, D17]",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10]",
+        "P1 -HAD_ADMISSION-> each of [A2, A1]"
+      ],
+      "expected_answer": [
+        "ONE"
+      ]
+    },
+    {
+      "id": "Q20",
+      "question": "For patient 10000032, consider admissions with both “Cirrhosis of liver without mention of alcohol” and “Other ascites” recorded. Was “Percutaneous abdominal drainage” recorded in all of those admissions, only some, or none?",
+      "cypher_query": "MATCH (:Patient {subject_id: '10000032'})-[:HAD_ADMISSION]->(a:Admission) MATCH (a)-[:RECORDED_DIAGNOSIS]->(d1:Diagnosis), (a)-[:RECORDED_DIAGNOSIS]->(d2:Diagnosis) WHERE toLower(d1.name) = 'cirrhosis of liver without mention of alcohol' AND toLower(d2.name) = 'other ascites' WITH DISTINCT a OPTIONAL MATCH (a)-[:INCLUDED_PROCEDURE]->(pr:Procedure) RETURN a.hadm_id AS hadm_id, collect(pr.name) AS procedures;",
+      "cypher_output": [
+        {
+          "hadm_id": "22595853",
+          "procedures": [
+            "Percutaneous abdominal drainage"
+          ]
+        },
+        {
+          "hadm_id": "22841357",
+          "procedures": [
+            "Percutaneous abdominal drainage"
+          ]
+        },
+        {
+          "hadm_id": "25742920",
+          "procedures": [
+            "Percutaneous abdominal drainage"
+          ]
+        },
+        {
+          "hadm_id": "29079034",
+          "procedures": []
+        }
+      ],
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "EVERY_ADMISSION",
+          "description": "Drainage is recorded in every qualifying admission."
+        },
+        {
+          "label": "SOME_ADMISSIONS",
+          "description": "Drainage is recorded in at least one qualifying admission and absent in at least one other complete procedure list."
+        },
+        {
+          "label": "NONE_RECORDED",
+          "description": "Drainage is absent from the complete procedure lists of all qualifying admissions."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        },
+        {
+          "id": "R09",
+          "rule": "Establish qualification using the supplied record properties and graph links if provided. Deduplicate by the identity requested in the question."
+        }
+      ],
+      "graph_text": [
+        "All recorded procedures for the shown admissions are included.",
+        "P1 [Patient]: name=Patient 10000032",
+        "A1 [Admission]: hadm_id=22595853",
+        "A2 [Admission]: hadm_id=22841357",
+        "A3 [Admission]: hadm_id=25742920",
+        "A4 [Admission]: hadm_id=29079034",
+        "D1 [Diagnosis]: name=Cirrhosis of liver without mention of alcohol",
+        "D2 [Diagnosis]: name=Other ascites",
+        "PR1 [Procedure]: name=Percutaneous abdominal drainage",
+        "P1 -HAD_ADMISSION-> each of [A1, A2, A3, A4]",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A2 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A3 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A4 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A1 -INCLUDED_PROCEDURE-> PR1",
+        "A2 -INCLUDED_PROCEDURE-> PR1",
+        "A3 -INCLUDED_PROCEDURE-> PR1"
+      ],
+      "expected_answer": [
+        "SOME_ADMISSIONS"
+      ]
+    },
+    {
+      "id": "Q21",
+      "question": "Patient 10001217 had two admissions with intracranial abscess. Were the sets of MAIN and BASE prescription combinations for meropenem the same in both admissions or different? Compare the drug names, doses and units within each pharmacy order, counting repeated identical combinations once.",
+      "cypher_query": "MATCH (:Patient {subject_id: '10001217'})-[:HAD_ADMISSION]->(a:Admission) MATCH (a)-[:RECORDED_DIAGNOSIS]->(d:Diagnosis) WHERE toLower(d.name) = 'intracranial abscess' WITH DISTINCT a OPTIONAL MATCH (a)-[:INCLUDED_PHARMACY_ORDER]->(o:PharmacyOrder) WHERE toLower(o.medication) = 'meropenem' OPTIONAL MATCH (o)-[:FOR_PRESCRIPTION]->(rx:Prescription) RETURN a.hadm_id AS hadm_id, o.pharmacy_id AS pharmacy_id, collect(rx{.drug_type, .drug, .dose_val_rx, .dose_unit_rx}) AS prescriptions;",
+      "cypher_output": [
+        {
+          "hadm_id": "24597018",
+          "pharmacy_id": "94224066",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "1000",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride (Mini Bag Plus)",
+              "dose_val_rx": "100",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        },
+        {
+          "hadm_id": "24597018",
+          "pharmacy_id": "56786718",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "2000",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride",
+              "dose_val_rx": "250",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "pharmacy_id": "61069611",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "500",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride (Mini Bag Plus)",
+              "dose_val_rx": "100",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "pharmacy_id": "96944796",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "1000",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride (Mini Bag Plus)",
+              "dose_val_rx": "100",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "pharmacy_id": "12856328",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "1000",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride (Mini Bag Plus)",
+              "dose_val_rx": "100",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        },
+        {
+          "hadm_id": "27703517",
+          "pharmacy_id": "63446108",
+          "prescriptions": [
+            {
+              "drug_type": "MAIN",
+              "drug": "Meropenem",
+              "dose_val_rx": "1000",
+              "dose_unit_rx": "mg"
+            },
+            {
+              "drug_type": "BASE",
+              "drug": "0.9% Sodium Chloride (Mini Bag Plus)",
+              "dose_val_rx": "100",
+              "dose_unit_rx": "mL"
+            }
+          ]
+        }
+      ],
+      "hops": 3,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "SAME",
+          "description": "Both admissions have the same complete set of MAIN and BASE prescription combinations for meropenem."
+        },
+        {
+          "label": "DIFFERENT",
+          "description": "The admissions have different complete sets of MAIN and BASE prescription combinations for meropenem."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        },
+        {
+          "id": "R09",
+          "rule": "Establish qualification using the supplied record properties and graph links if provided. Deduplicate by the identity requested in the question."
+        }
+      ],
+      "graph_text": [
+        "All meropenem orders and their linked prescription components for the two admissions are included.",
+        "P1 [Patient]: name=Patient 10001217",
+        "A1 [Admission]: hadm_id=24597018",
+        "A2 [Admission]: hadm_id=27703517",
+        "O1 [PharmacyOrder]: pharmacy_id=94224066",
+        "RX1 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=1000; dose_unit_rx=mg",
+        "RX2 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride (Mini Bag Plus); dose_val_rx=100; dose_unit_rx=mL",
+        "O2 [PharmacyOrder]: pharmacy_id=56786718",
+        "RX3 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=2000; dose_unit_rx=mg",
+        "RX4 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride; dose_val_rx=250; dose_unit_rx=mL",
+        "O3 [PharmacyOrder]: pharmacy_id=61069611",
+        "RX5 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=500; dose_unit_rx=mg",
+        "RX6 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride (Mini Bag Plus); dose_val_rx=100; dose_unit_rx=mL",
+        "O4 [PharmacyOrder]: pharmacy_id=96944796",
+        "RX7 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=1000; dose_unit_rx=mg",
+        "RX8 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride (Mini Bag Plus); dose_val_rx=100; dose_unit_rx=mL",
+        "O5 [PharmacyOrder]: pharmacy_id=12856328",
+        "RX9 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=1000; dose_unit_rx=mg",
+        "RX10 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride (Mini Bag Plus); dose_val_rx=100; dose_unit_rx=mL",
+        "O6 [PharmacyOrder]: pharmacy_id=63446108",
+        "RX11 [Prescription]: drug_type=MAIN; drug=Meropenem; dose_val_rx=1000; dose_unit_rx=mg",
+        "RX12 [Prescription]: drug_type=BASE; drug=0.9% Sodium Chloride (Mini Bag Plus); dose_val_rx=100; dose_unit_rx=mL",
+        "P1 -HAD_ADMISSION-> each of [A1, A2]",
+        "A1 -INCLUDED_PHARMACY_ORDER-> each of [O1, O2]",
+        "A2 -INCLUDED_PHARMACY_ORDER-> each of [O3, O4, O5, O6]",
+        "O1 -FOR_PRESCRIPTION-> each of [RX1, RX2]",
+        "O2 -FOR_PRESCRIPTION-> each of [RX3, RX4]",
+        "O3 -FOR_PRESCRIPTION-> each of [RX5, RX6]",
+        "O4 -FOR_PRESCRIPTION-> each of [RX7, RX8]",
+        "O5 -FOR_PRESCRIPTION-> each of [RX9, RX10]",
+        "O6 -FOR_PRESCRIPTION-> each of [RX11, RX12]"
+      ],
+      "expected_answer": [
+        "DIFFERENT"
+      ]
+    },
+    {
+      "id": "Q22",
+      "question": "Do any medication events for the patient 10000032 belong to one admission but reference a pharmacy order from a different admission?",
+      "cypher_query": "MATCH (p:Patient {subject_id: '10000032'})-[:HAD_ADMISSION]->(a1:Admission) MATCH path = (a1)-[:INCLUDED_MEDICATION_EVENT]->(m:MedAdmin)-[:REFERENCES_PHARMACY_ORDER]->(o:PharmacyOrder)<-[:INCLUDED_PHARMACY_ORDER]-(a2:Admission) MATCH (p)-[:HAD_ADMISSION]->(a2) WHERE a1.hadm_id <> a2.hadm_id RETURN count(DISTINCT path) AS path_count;",
+      "cypher_output": {
+        "path_count": 1
+      },
+      "hops": 3,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one medication event references an order explicitly belonging to another admission."
+        },
+        {
+          "label": "NO",
+          "description": "No such mismatched path exists in the complete supplied scope."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034; subject_id=10000032",
+        "A2 [Admission]: hadm_id=22595853; subject_id=10000032",
+        "M1 [MedAdmin]: emar_id=10000032-57; medication=Albumin 5% (25g / 500mL)",
+        "O1 [PharmacyOrder]: pharmacy_id=92009906; medication=Influenza Vaccine Quadrivalent",
+        "A1 -INCLUDED_MEDICATION_EVENT-> M1",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1",
+        "A2 -INCLUDED_PHARMACY_ORDER-> O1"
+      ],
+      "expected_answer": [
+        "YES"
+      ]
+    },
+    {
+      "id": "Q23",
+      "variant_of": "Q05",
+      "perturbation": "Blanked the spinal tap chartdate, in graph_text.",
+      "question": "During the admission 24597018, was the spinal tap recorded before or after the procedure described as Other incision of brain?",
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BEFORE",
+          "description": "The spinal tap date precedes the brain procedure date."
+        },
+        {
+          "label": "AFTER",
+          "description": "The spinal tap date follows the brain procedure date."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24597018",
+        "PR1 [Procedure]: name=Spinal tap; chartdate=\"\"",
+        "PR2 [Procedure]: name=Other incision of brain; chartdate=2157-11-20",
+        "PR3 [Procedure]: name=Central venous catheter placement with guidance; chartdate=2157-11-22",
+        "A1 -INCLUDED_PROCEDURE-> each of [PR1, PR2, PR3]"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "The spinal tap has no recorded date, so its order relative to the brain procedure cannot be established."
+    },
+    {
+      "id": "Q24",
+      "variant_of": "Q08",
+      "perturbation": "Blanked dose_unit_rx on the prescription, in graph_text.",
+      "question": "For the lactulose order with pharmacy_id 13724136 in the admission 22841357, what unit was recorded for the prescribed dose?",
+      "hops": 1,
+      "question_type": "lookup",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "UNIT_G",
+          "description": "g"
+        },
+        {
+          "label": "UNIT_MG",
+          "description": "mg"
+        },
+        {
+          "label": "UNIT_ML",
+          "description": "mL"
+        },
+        {
+          "label": "UNIT_UDCUP",
+          "description": "UDCUP"
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22841357; subject_id=10000032",
+        "RX1 [Prescription]: pharmacy_id=13724136; drug_type=MAIN; drug=Lactulose; prod_strength=20g/30mL Cup; dose_val_rx=30; dose_unit_rx=\"\"; form_val_disp=1; form_unit_disp=UDCUP; doses_per_24_hrs=3",
+        "A1 -INCLUDED_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "The question asks for the recorded unit; dose_unit_rx is blank. mL in prod_strength describes the product, not the recorded dose unit."
+    },
+    {
+      "id": "Q25",
+      "variant_of": "Q10",
+      "perturbation": "Blanked the admittime of admission 25742920, in graph_text.",
+      "question": "Does admission with hadm_id 25742920 fall within 0 through 30 calendar days inclusive of the most recent preceding discharge for the patient 10000032? Compare discharge and admission dates, not elapsed hours.",
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "The return is within 30 calendar days of the most recent preceding discharge."
+        },
+        {
+          "label": "NO",
+          "description": "The return is later than 30 calendar days after that discharge."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: name=Patient 10000032",
+        "A1 [Admission]: hadm_id=22595853; admittime=2180-05-06 22:23:00; dischtime=2180-05-07 17:15:00",
+        "A2 [Admission]: hadm_id=22841357; admittime=2180-06-26 18:27:00; dischtime=2180-06-27 18:49:00",
+        "A3 [Admission]: hadm_id=25742920; admittime=\"\"; dischtime=2180-08-07 17:50:00",
+        "A4 [Admission]: hadm_id=29079034; admittime=2180-07-23 12:35:00; dischtime=2180-07-25 17:55:00",
+        "P1 -HAD_ADMISSION-> each of [A1, A2, A3, A4]"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "Without the admission time of 25742920, neither the most recent preceding discharge nor the day difference can be determined."
+    },
+    {
+      "id": "Q26",
+      "variant_of": "Q15",
+      "perturbation": "Removed the pneumococcal vaccine event; the influenza event is renamed M1, in graph_text.",
+      "question": "In the admission 24982426, were the influenza and pneumococcal vaccines each recorded as administered or as not given?",
+      "hops": 1,
+      "question_type": "lookup",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BOTH",
+          "description": "Both vaccines are recorded as administered."
+        },
+        {
+          "label": "NEITHER_GIVEN",
+          "description": "Both vaccines are recorded as not given."
+        },
+        {
+          "label": "INFLUENZA_ONLY",
+          "description": "Influenza vaccine is recorded as administered; pneumococcal vaccine is recorded as not given."
+        },
+        {
+          "label": "PNEUMOCOCCAL_ONLY",
+          "description": "Pneumococcal vaccine is recorded as administered; influenza vaccine is recorded as not given."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: name=Admission 24982426",
+        "M1 [MedAdmin]: emar_id=10002495-59; medication=Influenza Vaccine Quadrivalent; event_txt=Administered",
+        "A1 -INCLUDED_MEDICATION_EVENT-> M1"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "Influenza is recorded as administered, but no pneumococcal record is supplied. Missing records do not establish non-administration (R01), so INFLUENZA_ONLY is not established."
+    },
+    {
+      "id": "Q27",
+      "variant_of": "Q16",
+      "perturbation": "Changed M1 event_txt from Partial Administered to Not Given; its detail MD2 still records 12.5 g, in graph_text.",
+      "question": "Does the total recorded administered dose of albumin from the events with emar_id 10000032-49 and emar_id 10000032-50 equal, fall below, or exceed the dose prescribed for pharmacy order 77278287?",
+      "hops": 2,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "FULL_DOSE",
+          "description": "The two named events document exactly the prescribed dose."
+        },
+        {
+          "label": "PARTIAL_DOSE",
+          "description": "The two named events document a positive amount below the prescribed dose."
+        },
+        {
+          "label": "EXCEEDS_PRESCRIBED_DOSE",
+          "description": "The two named events document more than the prescribed dose."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R05",
+          "rule": "Count each medication administration event once. When calculating dose totals, count each administered quantity once, including quantities represented by both summary and component records."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-49; medication=Albumin 25% (12.5g / 50mL); event_txt=Not Given",
+        "M2 [MedAdmin]: emar_id=10000032-50; medication=Albumin 25% (12.5g / 50mL); event_txt=Partial Administered",
+        "MD1 [MedAdminDetail]: dose_given=12.5; dose_given_unit=g",
+        "MD2 [MedAdminDetail]: dose_given=12.5; dose_given_unit=g",
+        "MD3 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "MD4 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "O1 [PharmacyOrder]: pharmacy_id=77278287",
+        "RX1 [Prescription]: drug=Albumin 25% (12.5g / 50mL); dose_val_rx=37.5; dose_unit_rx=g",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD3, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1",
+        "M2 -HAS_DOSE_DETAIL-> each of [MD4, MD1]",
+        "M2 -REFERENCES_PHARMACY_ORDER-> O1",
+        "O1 -FOR_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "CONFLICTING_RECORDS"
+      ],
+      "gold_note": "M1 is Not Given but its linked detail records 12.5 g given. Status and recorded dose contradict (R06)."
+    },
+    {
+      "id": "Q28",
+      "variant_of": "Q18",
+      "perturbation": "Changed M1 event_txt from Administered to Not Given; MD1 still records 40 mg, in graph_text.",
+      "question": "Does the dose recorded in the medication administration 10000032-23 of furosemide match the dose in its referenced prescription?",
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "MATCH",
+          "description": "The reconciled administered dose equals the prescribed dose in compatible units."
+        },
+        {
+          "label": "MISMATCH",
+          "description": "The reconciled administered and prescribed doses are known but unequal."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R05",
+          "rule": "Count each medication administration event once. When calculating dose totals, count each administered quantity once, including quantities represented by both summary and component records."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-23; medication=Furosemide; event_txt=Not Given",
+        "MD1 [MedAdminDetail]: dose_given=40; dose_given_unit=mg",
+        "MD2 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "O1 [PharmacyOrder]: pharmacy_id=19796602",
+        "RX1 [Prescription]: drug=Furosemide; dose_val_rx=40; dose_unit_rx=mg",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1",
+        "O1 -FOR_PRESCRIPTION-> RX1"
+      ],
+      "expected_answer": [
+        "CONFLICTING_RECORDS"
+      ],
+      "gold_note": "M1 is Not Given but its linked detail records 40 mg given. Status and recorded dose contradict (R06)."
+    },
+    {
+      "id": "Q29",
+      "variant_of": "Q18",
+      "perturbation": "Removed the edge O1 -FOR_PRESCRIPTION-> RX1, in graph_text.",
+      "question": "Does the dose recorded in the medication administration 10000032-23 of furosemide match the dose in its referenced prescription?",
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "MATCH",
+          "description": "The reconciled administered dose equals the prescribed dose in compatible units."
+        },
+        {
+          "label": "MISMATCH",
+          "description": "The reconciled administered and prescribed doses are known but unequal."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R04",
+          "rule": "Use the supplied medication fields with their units. Add or compare only compatible explicit units. No unit conversion is required."
+        },
+        {
+          "id": "R05",
+          "rule": "Count each medication administration event once. When calculating dose totals, count each administered quantity once, including quantities represented by both summary and component records."
+        },
+        {
+          "id": "R06",
+          "rule": "A dose counts as given only if the event status and the recorded dose agree. A prescription alone does not establish administration."
+        }
+      ],
+      "graph_text": [
+        "M1 [MedAdmin]: emar_id=10000032-23; medication=Furosemide; event_txt=Administered",
+        "MD1 [MedAdminDetail]: dose_given=40; dose_given_unit=mg",
+        "MD2 [MedAdminDetail]: dose_given=\"\"; dose_given_unit=\"\"",
+        "O1 [PharmacyOrder]: pharmacy_id=19796602",
+        "RX1 [Prescription]: drug=Furosemide; dose_val_rx=40; dose_unit_rx=mg",
+        "M1 -HAS_DOSE_DETAIL-> each of [MD1, MD2]",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "No path links the event to RX1, so the referenced prescription's dose is not established (R03)."
+    },
+    {
+      "id": "Q30",
+      "variant_of": "Q22",
+      "perturbation": "Removed the edge A2 -INCLUDED_PHARMACY_ORDER-> O1, in graph_text.",
+      "question": "Do any medication events for the patient 10000032 belong to one admission but reference a pharmacy order from a different admission?",
+      "hops": 3,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one medication event references an order explicitly belonging to another admission."
+        },
+        {
+          "label": "NO",
+          "description": "No such mismatched path exists in the complete supplied scope."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034; subject_id=10000032",
+        "A2 [Admission]: hadm_id=22595853; subject_id=10000032",
+        "M1 [MedAdmin]: emar_id=10000032-57; medication=Albumin 5% (25g / 500mL)",
+        "O1 [PharmacyOrder]: pharmacy_id=92009906; medication=Influenza Vaccine Quadrivalent",
+        "A1 -INCLUDED_MEDICATION_EVENT-> M1",
+        "M1 -REFERENCES_PHARMACY_ORDER-> O1"
+      ],
+      "expected_answer": [
+        "INSUFFICIENT_INFORMATION"
+      ],
+      "gold_note": "O1 is not linked to any admission, so it cannot be shown to belong to a different admission than M1 (R01, R03)."
+    },
+    {
+      "id": "Q31",
+      "question": "In admission 22595853, do the recorded diagnoses attribute the patient's liver disease to alcohol?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "ALCOHOL_RELATED",
+          "description": "A recorded diagnosis attributes the liver disease to alcohol."
+        },
+        {
+          "label": "NOT_ALCOHOL_RELATED",
+          "description": "The complete diagnosis list records liver disease without attributing it to alcohol."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22595853; subject_id=10000032",
+        "D1 [Diagnosis]: icd_code=5723; name=Portal hypertension",
+        "D2 [Diagnosis]: icd_code=78959; name=Other ascites",
+        "D3 [Diagnosis]: icd_code=5715; name=Cirrhosis of liver without mention of alcohol",
+        "D4 [Diagnosis]: icd_code=07070; name=Unspecified viral hepatitis C without hepatic coma",
+        "D5 [Diagnosis]: icd_code=496; name=Chronic airway obstruction, not elsewhere classified",
+        "D6 [Diagnosis]: icd_code=29680; name=Bipolar disorder, unspecified",
+        "D7 [Diagnosis]: icd_code=30981; name=Posttraumatic stress disorder",
+        "D8 [Diagnosis]: icd_code=V1582; name=Personal history of tobacco use",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8]",
+        "All recorded diagnoses for the admission are included."
+      ],
+      "expected_answer": [
+        "NOT_ALCOHOL_RELATED"
+      ],
+      "gold_note": "Cirrhosis is coded 'without mention of alcohol'; the other liver diagnosis is viral hepatitis C. No diagnosis attributes it to alcohol.",
+      "cypher_note": "A keyword query for 'alcohol' matches the cirrhosis title and gives the wrong answer; Cypher needs an explicit list of alcohol-related codes."
+    },
+    {
+      "id": "Q32",
+      "question": "In admission 24982426, which antithrombotic drug classes are recorded as administered in the supplied medication events: antiplatelets, anticoagulants, both, or neither?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "ANTIPLATELET_ONLY",
+          "description": "Only antiplatelet drugs are recorded as administered."
+        },
+        {
+          "label": "ANTICOAGULANT_ONLY",
+          "description": "Only anticoagulant drugs are recorded as administered."
+        },
+        {
+          "label": "BOTH",
+          "description": "Both antiplatelet and anticoagulant drugs are recorded as administered."
+        },
+        {
+          "label": "NEITHER",
+          "description": "No antithrombotic drug is recorded as administered."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=24982426; subject_id=10002495",
+        "M1 [MedAdmin]: emar_id=10002495-15; medication=Omeprazole; event_txt=Administered",
+        "M2 [MedAdmin]: emar_id=10002495-16; medication=Aspirin EC; event_txt=Administered",
+        "M3 [MedAdmin]: emar_id=10002495-17; medication=Clopidogrel; event_txt=Administered",
+        "M4 [MedAdmin]: emar_id=10002495-19; medication=Heparin; event_txt=Administered",
+        "M5 [MedAdmin]: emar_id=10002495-20; medication=Metoprolol Tartrate; event_txt=Administered",
+        "M6 [MedAdmin]: emar_id=10002495-24; medication=Digoxin; event_txt=Administered",
+        "M7 [MedAdmin]: emar_id=10002495-25; medication=Metoprolol Tartrate; event_txt=Administered",
+        "M8 [MedAdmin]: emar_id=10002495-29; medication=Heparin; event_txt=Administered",
+        "M9 [MedAdmin]: emar_id=10002495-30; medication=Metoprolol Tartrate; event_txt=Administered",
+        "M10 [MedAdmin]: emar_id=10002495-31; medication=Warfarin; event_txt=Not Given",
+        "M11 [MedAdmin]: emar_id=10002495-33; medication=Warfarin; event_txt=Administered",
+        "M12 [MedAdmin]: emar_id=10002495-37; medication=Atorvastatin; event_txt=Administered",
+        "M13 [MedAdmin]: emar_id=10002495-40; medication=Heparin; event_txt=Administered",
+        "M14 [MedAdmin]: emar_id=10002495-41; medication=Metoprolol Tartrate; event_txt=Administered",
+        "M15 [MedAdmin]: emar_id=10002495-42; medication=Omeprazole; event_txt=Administered",
+        "M16 [MedAdmin]: emar_id=10002495-48; medication=Aspirin EC; event_txt=Administered",
+        "M17 [MedAdmin]: emar_id=10002495-50; medication=Clopidogrel; event_txt=Administered",
+        "M18 [MedAdmin]: emar_id=10002495-51; medication=Digoxin; event_txt=Administered",
+        "M19 [MedAdmin]: emar_id=10002495-53; medication=Heparin; event_txt=Administered",
+        "M20 [MedAdmin]: emar_id=10002495-56; medication=Omeprazole; event_txt=Administered",
+        "M21 [MedAdmin]: emar_id=10002495-62; medication=Heparin; event_txt=Administered",
+        "M22 [MedAdmin]: emar_id=10002495-67; medication=Warfarin; event_txt=Administered",
+        "A1 -INCLUDED_MEDICATION_EVENT-> each of [M1, M2, M3, M4, M5, M6, M7, M8, M9, M10, M11, M12, M13, M14, M15, M16, M17, M18, M19, M20, M21, M22]"
+      ],
+      "expected_answer": [
+        "BOTH"
+      ],
+      "gold_note": "Aspirin and clopidogrel (antiplatelets) and heparin and warfarin (anticoagulants) are recorded as Administered.",
+      "cypher_note": "Cypher needs a drug-class mapping (e.g. ATC or RxNorm classes) or hand-made name lists for each class."
+    },
+    {
+      "id": "Q33",
+      "question": "In admission 29079034, is an opioid analgesic recorded as administered in the supplied medication events?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "An opioid analgesic is recorded as administered."
+        },
+        {
+          "label": "NO",
+          "description": "No opioid analgesic is recorded as administered."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034; subject_id=10000032",
+        "M1 [MedAdmin]: emar_id=10000032-53; medication=Lactulose; event_txt=Administered",
+        "M2 [MedAdmin]: emar_id=10000032-59; medication=Lactulose; event_txt=Administered",
+        "M3 [MedAdmin]: emar_id=10000032-60; medication=Lactulose; event_txt=Administered",
+        "M4 [MedAdmin]: emar_id=10000032-61; medication=TraMADOL (Ultram); event_txt=Administered",
+        "M5 [MedAdmin]: emar_id=10000032-65; medication=Calcium Carbonate; event_txt=Administered",
+        "M6 [MedAdmin]: emar_id=10000032-69; medication=Heparin; event_txt=Administered",
+        "M7 [MedAdmin]: emar_id=10000032-70; medication=Lactulose; event_txt=Administered",
+        "M8 [MedAdmin]: emar_id=10000032-72; medication=Rifaximin; event_txt=Administered",
+        "M9 [MedAdmin]: emar_id=10000032-74; medication=Lactulose; event_txt=Administered",
+        "M10 [MedAdmin]: emar_id=10000032-75; medication=Lactulose; event_txt=Not Given",
+        "M11 [MedAdmin]: emar_id=10000032-77; medication=Calcium Carbonate; event_txt=Administered",
+        "M12 [MedAdmin]: emar_id=10000032-80; medication=Rifaximin; event_txt=Administered",
+        "M13 [MedAdmin]: emar_id=10000032-81; medication=TraMADOL (Ultram); event_txt=Administered",
+        "M14 [MedAdmin]: emar_id=10000032-82; medication=Heparin; event_txt=Not Given",
+        "M15 [MedAdmin]: emar_id=10000032-84; medication=Calcium Carbonate; event_txt=Administered",
+        "M16 [MedAdmin]: emar_id=10000032-87; medication=Heparin; event_txt=Not Given",
+        "M17 [MedAdmin]: emar_id=10000032-88; medication=Rifaximin; event_txt=Administered",
+        "M18 [MedAdmin]: emar_id=10000032-89; medication=TraMADOL (Ultram); event_txt=Administered",
+        "M19 [MedAdmin]: emar_id=10000032-90; medication=Lactulose; event_txt=Administered",
+        "M20 [MedAdmin]: emar_id=10000032-93; medication=Albuterol Inhaler; event_txt=Administered",
+        "M21 [MedAdmin]: emar_id=10000032-94; medication=Lactulose; event_txt=Administered",
+        "M22 [MedAdmin]: emar_id=10000032-95; medication=Lactulose; event_txt=Not Given",
+        "M23 [MedAdmin]: emar_id=10000032-97; medication=Albuterol Inhaler; event_txt=Administered",
+        "M24 [MedAdmin]: emar_id=10000032-98; medication=Calcium Carbonate; event_txt=Administered",
+        "A1 -INCLUDED_MEDICATION_EVENT-> each of [M1, M2, M3, M4, M5, M6, M7, M8, M9, M10, M11, M12, M13, M14, M15, M16, M17, M18, M19, M20, M21, M22, M23, M24]"
+      ],
+      "expected_answer": [
+        "YES"
+      ],
+      "gold_note": "Tramadol is an opioid analgesic and is recorded as Administered.",
+      "cypher_note": "Nothing in the record says 'opioid'; Cypher needs an opioid name list that includes tramadol."
+    },
+    {
+      "id": "Q34",
+      "question": "In admission 22841357, was any beta-lactam antibiotic prescribed?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one beta-lactam antibiotic is prescribed."
+        },
+        {
+          "label": "NO",
+          "description": "The complete prescription list contains no beta-lactam antibiotic."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22841357; subject_id=10000032",
+        "RX1 [Prescription]: drug=Influenza Vaccine Quadrivalent; drug_type=MAIN; route=IM",
+        "RX2 [Prescription]: drug=Sodium Chloride 0.9%  Flush; drug_type=MAIN; route=IV",
+        "RX3 [Prescription]: drug=Heparin; drug_type=MAIN; route=SC",
+        "RX4 [Prescription]: drug=Lactulose; drug_type=MAIN; route=PO/NG",
+        "RX5 [Prescription]: drug=Calcium Carbonate; drug_type=MAIN; route=PO/NG",
+        "RX6 [Prescription]: drug=Acetaminophen; drug_type=MAIN; route=PO/NG",
+        "RX7 [Prescription]: drug=Emtricitabine-Tenofovir (Truvada); drug_type=MAIN; route=PO",
+        "RX8 [Prescription]: drug=Furosemide; drug_type=MAIN; route=PO/NG",
+        "RX9 [Prescription]: drug=Albuterol Inhaler; drug_type=MAIN; route=IH",
+        "RX10 [Prescription]: drug=Raltegravir; drug_type=MAIN; route=PO",
+        "RX11 [Prescription]: drug=Sulfameth/Trimethoprim DS; drug_type=MAIN; route=PO/NG",
+        "RX12 [Prescription]: drug=Tiotropium Bromide; drug_type=MAIN; route=IH",
+        "RX13 [Prescription]: drug=Rifaximin; drug_type=MAIN; route=PO/NG",
+        "RX14 [Prescription]: drug=Furosemide; drug_type=MAIN; route=PO/NG",
+        "RX15 [Prescription]: drug=Albumin 25% (12.5g / 50mL); drug_type=MAIN; route=IV",
+        "A1 -INCLUDED_PRESCRIPTION-> each of [RX1, RX2, RX3, RX4, RX5, RX6, RX7, RX8, RX9, RX10, RX11, RX12, RX13, RX14, RX15]",
+        "All prescriptions for the admission are included."
+      ],
+      "expected_answer": [
+        "NO"
+      ],
+      "gold_note": "The antibiotics are sulfamethoxazole/trimethoprim (a sulfonamide combination) and rifaximin (a rifamycin); neither is a beta-lactam.",
+      "cypher_note": "Cypher needs an antibiotic-class list; a query for 'antibiotic' finds nothing, and one for any antibiotic would wrongly say yes."
+    },
+    {
+      "id": "Q35",
+      "question": "In admission 25563031, is a history of cancer recorded for the patient personally, for the family, both, or neither?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "FAMILY_ONLY",
+          "description": "Only a family history of cancer is recorded."
+        },
+        {
+          "label": "BOTH",
+          "description": "Both a personal and a family history of cancer are recorded."
+        },
+        {
+          "label": "PERSONAL_ONLY",
+          "description": "Only a personal history of cancer is recorded."
+        },
+        {
+          "label": "NEITHER",
+          "description": "The complete diagnosis list records no history of cancer."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R02",
+          "rule": "Determine whether the supplied evidence records an active condition in the patient, a family history of the condition, neither, or both. Use the diagnosis descriptions and their qualifiers to make this distinction."
+        },
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=25563031; subject_id=10001725",
+        "D1 [Diagnosis]: icd_code=78829; name=Other specified retention of urine",
+        "D2 [Diagnosis]: icd_code=9950; name=Other anaphylactic reaction",
+        "D3 [Diagnosis]: icd_code=6185; name=Prolapse of vaginal vault after hysterectomy",
+        "D4 [Diagnosis]: icd_code=49390; name=Asthma, unspecified type, unspecified",
+        "D5 [Diagnosis]: icd_code=53081; name=Esophageal reflux",
+        "D6 [Diagnosis]: icd_code=30000; name=Anxiety state, unspecified",
+        "D7 [Diagnosis]: icd_code=311; name=Depressive disorder, not elsewhere classified",
+        "D8 [Diagnosis]: icd_code=7291; name=Myalgia and myositis, unspecified",
+        "D9 [Diagnosis]: icd_code=5641; name=Irritable bowel syndrome",
+        "D10 [Diagnosis]: icd_code=6186; name=Vaginal enterocele, congenital or acquired",
+        "D11 [Diagnosis]: icd_code=V1041; name=Personal history of malignant neoplasm of cervix uteri",
+        "D12 [Diagnosis]: icd_code=31401; name=Attention deficit disorder with hyperactivity",
+        "D13 [Diagnosis]: icd_code=V1582; name=Personal history of tobacco use",
+        "D14 [Diagnosis]: icd_code=4571; name=Other lymphedema",
+        "D15 [Diagnosis]: icd_code=3331; name=Essential and other specified forms of tremor",
+        "D16 [Diagnosis]: icd_code=56400; name=Constipation, unspecified",
+        "D17 [Diagnosis]: icd_code=E9352; name=Other opiates and related narcotics causing adverse effects in therapeutic use",
+        "D18 [Diagnosis]: icd_code=78052; name=Insomnia, unspecified",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, D16, D17, D18]",
+        "All recorded diagnoses for the admission are included."
+      ],
+      "expected_answer": [
+        "PERSONAL_ONLY"
+      ],
+      "gold_note": "'Personal history of malignant neoplasm of cervix uteri' is a personal cancer history; no family history code is present.",
+      "cypher_note": "Cypher needs to know that 'malignant neoplasm' means cancer and which V-codes are personal vs family history."
+    },
+    {
+      "id": "Q36",
+      "question": "In admission 25563031, does a recorded diagnosis describe an adverse effect of a drug class that was also prescribed in the same admission?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "A diagnosis describes an adverse effect of a drug class that is also prescribed."
+        },
+        {
+          "label": "NO",
+          "description": "No diagnosis describes an adverse effect of a prescribed drug class."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=25563031; subject_id=10001725",
+        "D1 [Diagnosis]: icd_code=9950; name=Other anaphylactic reaction",
+        "D2 [Diagnosis]: icd_code=7291; name=Myalgia and myositis, unspecified",
+        "D3 [Diagnosis]: icd_code=E9352; name=Other opiates and related narcotics causing adverse effects in therapeutic use",
+        "D4 [Diagnosis]: icd_code=78052; name=Insomnia, unspecified",
+        "RX1 [Prescription]: drug=OxycoDONE (Immediate Release); drug_type=MAIN; route=PO/NG",
+        "RX2 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX3 [Prescription]: drug=HYDROmorphone (Dilaudid); drug_type=MAIN; route=IV",
+        "RX4 [Prescription]: drug=Ondansetron; drug_type=MAIN; route=IV",
+        "RX5 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX6 [Prescription]: drug=Ibuprofen; drug_type=MAIN; route=PO",
+        "RX7 [Prescription]: drug=OxycoDONE (Immediate Release); drug_type=MAIN; route=PO/NG",
+        "RX8 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX9 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX10 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX11 [Prescription]: drug=Ketorolac; drug_type=MAIN; route=IV",
+        "RX12 [Prescription]: drug=Ibuprofen; drug_type=MAIN; route=PO",
+        "RX13 [Prescription]: drug=Ondansetron; drug_type=MAIN; route=PO/NG",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4]",
+        "A1 -INCLUDED_PRESCRIPTION-> each of [RX1, RX2, RX3, RX4, RX5, RX6, RX7, RX8, RX9, RX10, RX11, RX12, RX13]"
+      ],
+      "expected_answer": [
+        "YES"
+      ],
+      "gold_note": "The diagnosis 'Other opiates and related narcotics causing adverse effects in therapeutic use' matches the prescribed opioids hydromorphone and oxycodone.",
+      "cypher_note": "Cypher needs a mapping from the external-cause code E9352 to opioid drug names; the diagnosis and the prescriptions share no code or keyword."
+    },
+    {
+      "id": "Q37",
+      "question": "In admission 24982426, do the supplied diagnoses record bleeding, anticoagulant use, both, or neither?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BLEEDING_ONLY",
+          "description": "Bleeding is recorded without anticoagulant use."
+        },
+        {
+          "label": "ANTICOAGULANT_ONLY",
+          "description": "Anticoagulant use is recorded without bleeding."
+        },
+        {
+          "label": "BOTH",
+          "description": "Both bleeding and anticoagulant use are recorded."
+        },
+        {
+          "label": "NEITHER",
+          "description": "Neither bleeding nor anticoagulant use is recorded."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=24982426; subject_id=10002495",
+        "D1 [Diagnosis]: icd_code=I10; name=Essential (primary) hypertension",
+        "D2 [Diagnosis]: icd_code=E785; name=Hyperlipidemia, unspecified",
+        "D3 [Diagnosis]: icd_code=T45515A; name=Adverse effect of anticoagulants, initial encounter",
+        "D4 [Diagnosis]: icd_code=Z7901; name=Long term (current) use of anticoagulants",
+        "D5 [Diagnosis]: icd_code=R310; name=Gross hematuria",
+        "D6 [Diagnosis]: icd_code=I480; name=Paroxysmal atrial fibrillation",
+        "D7 [Diagnosis]: icd_code=K219; name=Gastro-esophageal reflux disease without esophagitis",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7]"
+      ],
+      "expected_answer": [
+        "BOTH"
+      ],
+      "gold_note": "Gross hematuria is bleeding; long-term anticoagulant use and an adverse effect of anticoagulants are both recorded.",
+      "cypher_note": "Cypher needs to know that hematuria is a bleeding event; no title contains 'bleeding'."
+    },
+    {
+      "id": "Q38",
+      "question": "In admission 27703517, do the recorded diagnoses include bacterial infections, viral infections, both, or neither?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BACTERIAL_ONLY",
+          "description": "Only bacterial infections are recorded."
+        },
+        {
+          "label": "VIRAL_ONLY",
+          "description": "Only viral infections are recorded."
+        },
+        {
+          "label": "BOTH",
+          "description": "Both bacterial and viral infections are recorded."
+        },
+        {
+          "label": "NEITHER",
+          "description": "The complete diagnosis list records no bacterial or viral infection."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=27703517; subject_id=10001217",
+        "D1 [Diagnosis]: icd_code=3240; name=Intracranial abscess",
+        "D2 [Diagnosis]: icd_code=3485; name=Cerebral edema",
+        "D3 [Diagnosis]: icd_code=340; name=Multiple sclerosis",
+        "D4 [Diagnosis]: icd_code=04102; name=Streptococcus infection in conditions classified elsewhere and of unspecified site, streptococcus, group B",
+        "D5 [Diagnosis]: icd_code=04184; name=Other specified bacterial infections in conditions classified elsewhere and of unspecified site, other anaerobes",
+        "D6 [Diagnosis]: icd_code=4019; name=Unspecified essential hypertension",
+        "D7 [Diagnosis]: icd_code=3051; name=Tobacco use disorder",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7]",
+        "All recorded diagnoses for the admission are included."
+      ],
+      "expected_answer": [
+        "BACTERIAL_ONLY"
+      ],
+      "gold_note": "Group B streptococcus and other anaerobes are bacterial; no viral infection is recorded.",
+      "cypher_note": "Cypher needs an organism-type mapping for ICD codes; titles name organisms and diseases, not 'bacterial' or 'viral'."
+    },
+    {
+      "id": "Q39",
+      "question": "In admission 25742920, do the recorded diagnoses include bacterial infections, viral infections, both, or neither?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "BACTERIAL_ONLY",
+          "description": "Only bacterial infections are recorded."
+        },
+        {
+          "label": "VIRAL_ONLY",
+          "description": "Only viral infections are recorded."
+        },
+        {
+          "label": "BOTH",
+          "description": "Both bacterial and viral infections are recorded."
+        },
+        {
+          "label": "NEITHER",
+          "description": "The complete diagnosis list records no bacterial or viral infection."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=25742920; subject_id=10000032",
+        "D1 [Diagnosis]: icd_code=07054; name=Chronic hepatitis C without mention of hepatic coma",
+        "D2 [Diagnosis]: icd_code=78959; name=Other ascites",
+        "D3 [Diagnosis]: icd_code=V462; name=Other dependence on machines, supplemental oxygen",
+        "D4 [Diagnosis]: icd_code=5715; name=Cirrhosis of liver without mention of alcohol",
+        "D5 [Diagnosis]: icd_code=2767; name=Hyperpotassemia",
+        "D6 [Diagnosis]: icd_code=2761; name=Hyposmolality and/or hyponatremia",
+        "D7 [Diagnosis]: icd_code=496; name=Chronic airway obstruction, not elsewhere classified",
+        "D8 [Diagnosis]: icd_code=V08; name=Asymptomatic human immunodeficiency virus [HIV] infection status",
+        "D9 [Diagnosis]: icd_code=3051; name=Tobacco use disorder",
+        "D10 [Diagnosis]: icd_code=78791; name=Diarrhea",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10]",
+        "All recorded diagnoses for the admission are included."
+      ],
+      "expected_answer": [
+        "VIRAL_ONLY"
+      ],
+      "gold_note": "Chronic hepatitis C and HIV infection status are viral; no bacterial infection is recorded.",
+      "cypher_note": "Cypher needs an organism-type mapping for ICD codes; titles name organisms and diseases, not 'bacterial' or 'viral'."
+    },
+    {
+      "id": "Q40",
+      "question": "In admission 24982426, is the patient coded as a current tobacco user, or only as having a history of tobacco use?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "CURRENT_USE_AND_HISTORY",
+          "description": "Both current tobacco use and history are recorded."
+        },
+        {
+          "label": "CURRENT_USE",
+          "description": "Current tobacco use is recorded without a history code."
+        },
+        {
+          "label": "HISTORY_ONLY",
+          "description": "History is recorded without current tobacco use."
+        },
+        {
+          "label": "NEITHER_RECORDED",
+          "description": "Neither category is in the complete diagnosis list."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=24982426; subject_id=10002495",
+        "D1 [Diagnosis]: icd_code=I214; name=Non-ST elevation (NSTEMI) myocardial infarction",
+        "D2 [Diagnosis]: icd_code=R570; name=Cardiogenic shock",
+        "D3 [Diagnosis]: icd_code=I509; name=Heart failure, unspecified",
+        "D4 [Diagnosis]: icd_code=R578; name=Other shock",
+        "D5 [Diagnosis]: icd_code=A047; name=Enterocolitis due to Clostridium difficile",
+        "D6 [Diagnosis]: icd_code=N179; name=Acute kidney failure, unspecified",
+        "D7 [Diagnosis]: icd_code=S3730XA; name=Unspecified injury of urethra, initial encounter",
+        "D8 [Diagnosis]: icd_code=I2510; name=Atherosclerotic heart disease of native coronary artery without angina pectoris",
+        "D9 [Diagnosis]: icd_code=E118; name=Type 2 diabetes mellitus with unspecified complications",
+        "D10 [Diagnosis]: icd_code=X58XXXA; name=Exposure to other specified factors, initial encounter",
+        "D11 [Diagnosis]: icd_code=Y92239; name=Unspecified place in hospital as the place of occurrence of the external cause",
+        "D12 [Diagnosis]: icd_code=I10; name=Essential (primary) hypertension",
+        "D13 [Diagnosis]: icd_code=E785; name=Hyperlipidemia, unspecified",
+        "D14 [Diagnosis]: icd_code=T45515A; name=Adverse effect of anticoagulants, initial encounter",
+        "D15 [Diagnosis]: icd_code=Z86718; name=Personal history of other venous thrombosis and embolism",
+        "D16 [Diagnosis]: icd_code=Z7901; name=Long term (current) use of anticoagulants",
+        "D17 [Diagnosis]: icd_code=R310; name=Gross hematuria",
+        "D18 [Diagnosis]: icd_code=Z7902; name=Long term (current) use of antithrombotics/antiplatelets",
+        "D19 [Diagnosis]: icd_code=I480; name=Paroxysmal atrial fibrillation",
+        "D20 [Diagnosis]: icd_code=Z23; name=Encounter for immunization",
+        "D21 [Diagnosis]: icd_code=K2960; name=Other gastritis without bleeding",
+        "D22 [Diagnosis]: icd_code=B9681; name=Helicobacter pylori [H. pylori] as the cause of diseases classified elsewhere",
+        "D23 [Diagnosis]: icd_code=Z87891; name=Personal history of nicotine dependence",
+        "D24 [Diagnosis]: icd_code=I252; name=Old myocardial infarction",
+        "D25 [Diagnosis]: icd_code=R410; name=Disorientation, unspecified",
+        "D26 [Diagnosis]: icd_code=K219; name=Gastro-esophageal reflux disease without esophagitis",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, D16, D17, D18, D19, D20, D21, D22, D23, D24, D25, D26]",
+        "All recorded diagnoses for the admission are included."
+      ],
+      "expected_answer": [
+        "HISTORY_ONLY"
+      ],
+      "gold_note": "The ICD-10 code Z87891 'Personal history of nicotine dependence' is tobacco history; no current-use code is recorded.",
+      "cypher_note": "No title contains 'tobacco'; Cypher needs to map nicotine dependence (ICD-10) to the tobacco codes used elsewhere (ICD-9)."
+    },
+    {
+      "id": "Q41",
+      "question": "In admission 29079034, was any potassium result linked to the admission above the upper limit of its reference range?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '29079034'})-[:INCLUDED_LAB_TEST]->(l:LabEvent)-[:MEASURES]->(:LabItem {itemid: '50971'}) WITH l ORDER BY l.charttime RETURN collect(l{.charttime, .value, .valueuom, .ref_range_lower, .ref_range_upper, .flag}) AS potassium;",
+      "cypher_output": [
+        {
+          "charttime": "2180-07-23 21:45:00",
+          "flag": "",
+          "ref_range_lower": "3.3",
+          "ref_range_upper": "5.1",
+          "value": "4.7",
+          "valueuom": "mEq/L"
+        },
+        {
+          "charttime": "2180-07-24 06:35:00",
+          "flag": "",
+          "ref_range_lower": "3.3",
+          "ref_range_upper": "5.1",
+          "value": "5.0",
+          "valueuom": "mEq/L"
+        },
+        {
+          "charttime": "2180-07-25 04:45:00",
+          "flag": "abnormal",
+          "ref_range_lower": "3.3",
+          "ref_range_upper": "5.1",
+          "value": "5.2",
+          "valueuom": "mEq/L"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one potassium result linked to the admission is above the upper limit of its reference range."
+        },
+        {
+          "label": "NO",
+          "description": "No potassium result linked to the admission is above the upper limit of its reference range."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R12",
+          "rule": "A lab result is above or below its reference range only if it's strictly outside it; a value equal to a limit is within range. A flag of abnormal does not specify if it's above or below range."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034",
+        "L1 [LabEvent]: name=Potassium; charttime=2180-07-23 21:45:00; value=4.7; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=\"\"",
+        "L2 [LabEvent]: name=Potassium; charttime=2180-07-24 06:35:00; value=5.0; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=\"\"",
+        "L3 [LabEvent]: name=Potassium; charttime=2180-07-25 04:45:00; value=5.2; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=abnormal",
+        "A1 -INCLUDED_LAB_TEST-> each of [L1, L2, L3]",
+        "All potassium results linked to the admission are included."
+      ],
+      "expected_answer": [
+        "YES"
+      ]
+    },
+    {
+      "id": "Q42",
+      "variant_of": "Q41",
+      "perturbation": "Changed L3 value from 5.2 to 5.1 and cleared its flag, in graph_text.",
+      "question": "In admission 29079034, was any potassium result linked to the admission above the upper limit of its reference range?",
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one potassium result linked to the admission is above the upper limit of its reference range."
+        },
+        {
+          "label": "NO",
+          "description": "No potassium result linked to the admission is above the upper limit of its reference range."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R12",
+          "rule": "A lab result is above or below its reference range only if it's strictly outside it; a value equal to a limit is within range. A flag of abnormal does not specify if it's above or below range."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034",
+        "L1 [LabEvent]: name=Potassium; charttime=2180-07-23 21:45:00; value=4.7; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=\"\"",
+        "L2 [LabEvent]: name=Potassium; charttime=2180-07-24 06:35:00; value=5.0; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=\"\"",
+        "L3 [LabEvent]: name=Potassium; charttime=2180-07-25 04:45:00; value=5.1; valueuom=mEq/L; ref_range_lower=3.3; ref_range_upper=5.1; flag=\"\"",
+        "A1 -INCLUDED_LAB_TEST-> each of [L1, L2, L3]",
+        "All potassium results linked to the admission are included."
+      ],
+      "expected_answer": [
+        "NO"
+      ],
+      "gold_note": "L3 now equals the upper limit of 5.1; a value equal to a limit is within range, so no linked result is above it (R12)."
+    },
+    {
+      "id": "Q43",
+      "question": "In admission 29079034, was any platelet count linked to the admission below the lower limit of its reference range?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '29079034'})-[:INCLUDED_LAB_TEST]->(l:LabEvent)-[:MEASURES]->(:LabItem {itemid: '51265'}) WITH l ORDER BY l.charttime RETURN collect(l{.charttime, .value, .valueuom, .ref_range_lower, .ref_range_upper, .flag}) AS platelets;",
+      "cypher_output": [
+        {
+          "charttime": "2180-07-24 06:35:00",
+          "flag": "abnormal",
+          "ref_range_lower": "150",
+          "ref_range_upper": "440",
+          "value": "___",
+          "valueuom": "K/uL"
+        },
+        {
+          "charttime": "2180-07-25 04:45:00",
+          "flag": "abnormal",
+          "ref_range_lower": "150",
+          "ref_range_upper": "440",
+          "value": "95",
+          "valueuom": "K/uL"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one platelet count linked to the admission is below the lower limit of its reference range."
+        },
+        {
+          "label": "NO",
+          "description": "No platelet count linked to the admission is below the lower limit of its reference range."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R12",
+          "rule": "A lab result is above or below its reference range only if it's strictly outside it; a value equal to a limit is within range. A flag of abnormal does not specify if it's above or below range."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=29079034",
+        "L1 [LabEvent]: name=Platelet Count; charttime=2180-07-24 06:35:00; value=___; valueuom=K/uL; ref_range_lower=150; ref_range_upper=440; flag=abnormal",
+        "L2 [LabEvent]: name=Platelet Count; charttime=2180-07-25 04:45:00; value=95; valueuom=K/uL; ref_range_lower=150; ref_range_upper=440; flag=abnormal",
+        "A1 -INCLUDED_LAB_TEST-> each of [L1, L2]",
+        "All platelet counts linked to the admission are included."
+      ],
+      "expected_answer": [
+        "YES"
+      ]
+    },
+    {
+      "id": "Q44",
+      "question": "For admission 29079034, from emergency department registration to discharge, was any sodium result for the patient below 130 mEq/L?",
+      "cypher_query": "MATCH (p:Patient {subject_id: '10000032'})-[:HAD_ADMISSION]->(a:Admission {hadm_id: '29079034'}) MATCH (p)-[:HAD_LAB_TEST]->(l:LabEvent)-[:MEASURES]->(:LabItem {itemid: '50983'}) WHERE a.edregtime <= l.charttime <= a.dischtime WITH a, l ORDER BY l.charttime RETURN a{.hadm_id, .edregtime, .admittime, .dischtime} AS admission, collect(l{.charttime, .hadm_id, .value, .valueuom}) AS sodium;",
+      "cypher_output": {
+        "admission": {
+          "admittime": "2180-07-23 12:35:00",
+          "dischtime": "2180-07-25 17:55:00",
+          "edregtime": "2180-07-23 05:54:00",
+          "hadm_id": "29079034"
+        },
+        "sodium": [
+          {
+            "charttime": "2180-07-23 06:39:00",
+            "hadm_id": "",
+            "value": "126",
+            "valueuom": "mEq/L"
+          },
+          {
+            "charttime": "2180-07-23 21:45:00",
+            "hadm_id": "29079034",
+            "value": "132",
+            "valueuom": "mEq/L"
+          },
+          {
+            "charttime": "2180-07-24 06:35:00",
+            "hadm_id": "29079034",
+            "value": "130",
+            "valueuom": "mEq/L"
+          },
+          {
+            "charttime": "2180-07-25 04:45:00",
+            "hadm_id": "29079034",
+            "value": "130",
+            "valueuom": "mEq/L"
+          }
+        ]
+      },
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "YES",
+          "description": "At least one sodium result in the stated period is below 130 mEq/L."
+        },
+        {
+          "label": "NO",
+          "description": "No sodium result in the stated period is below 130 mEq/L."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: subject_id=10000032",
+        "A1 [Admission]: hadm_id=29079034; edregtime=2180-07-23 05:54:00; admittime=2180-07-23 12:35:00; dischtime=2180-07-25 17:55:00",
+        "L1 [LabEvent]: name=Sodium; charttime=2180-07-23 06:39:00; value=126; valueuom=mEq/L",
+        "L2 [LabEvent]: name=Sodium; charttime=2180-07-23 21:45:00; value=132; valueuom=mEq/L",
+        "L3 [LabEvent]: name=Sodium; charttime=2180-07-24 06:35:00; value=130; valueuom=mEq/L",
+        "L4 [LabEvent]: name=Sodium; charttime=2180-07-25 04:45:00; value=130; valueuom=mEq/L",
+        "P1 -HAD_ADMISSION-> A1",
+        "P1 -HAD_LAB_TEST-> each of [L1, L2, L3, L4]",
+        "A1 -INCLUDED_LAB_TEST-> each of [L2, L3, L4]",
+        "All sodium results for the patient from emergency department registration to discharge are included."
+      ],
+      "expected_answer": [
+        "YES"
+      ]
+    },
+    {
+      "id": "Q45",
+      "question": "In admission 24982426, was the last creatinine result linked to the admission higher than, lower than or equal to the first?",
+      "cypher_query": "MATCH (:Admission {hadm_id: '24982426'})-[:INCLUDED_LAB_TEST]->(l:LabEvent)-[:MEASURES]->(:LabItem {itemid: '50912'}) WITH l ORDER BY l.charttime RETURN collect(l{.charttime, .value, .valueuom, .ref_range_lower, .ref_range_upper}) AS creatinine;",
+      "cypher_output": [
+        {
+          "charttime": "2141-05-22 21:23:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.4",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-23 05:48:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.6",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-23 10:52:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.6",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-24 00:19:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.6",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-24 06:20:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.5",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-25 06:10:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.6",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-26 09:21:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.3",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-27 05:29:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.3",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-28 06:00:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.2",
+          "valueuom": "mg/dL"
+        },
+        {
+          "charttime": "2141-05-29 05:50:00",
+          "ref_range_lower": "0.5",
+          "ref_range_upper": "1.2",
+          "value": "1.1",
+          "valueuom": "mg/dL"
+        }
+      ],
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "HIGHER",
+          "description": "The last creatinine result is higher than the first."
+        },
+        {
+          "label": "LOWER",
+          "description": "The last creatinine result is lower than the first."
+        },
+        {
+          "label": "EQUAL",
+          "description": "The last and first creatinine results are equal."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=24982426",
+        "L1 [LabEvent]: name=Creatinine; charttime=2141-05-22 21:23:00; value=1.4; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L2 [LabEvent]: name=Creatinine; charttime=2141-05-23 05:48:00; value=1.6; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L3 [LabEvent]: name=Creatinine; charttime=2141-05-23 10:52:00; value=1.6; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L4 [LabEvent]: name=Creatinine; charttime=2141-05-24 00:19:00; value=1.6; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L5 [LabEvent]: name=Creatinine; charttime=2141-05-24 06:20:00; value=1.5; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L6 [LabEvent]: name=Creatinine; charttime=2141-05-25 06:10:00; value=1.6; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L7 [LabEvent]: name=Creatinine; charttime=2141-05-26 09:21:00; value=1.3; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L8 [LabEvent]: name=Creatinine; charttime=2141-05-27 05:29:00; value=1.3; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L9 [LabEvent]: name=Creatinine; charttime=2141-05-28 06:00:00; value=1.2; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "L10 [LabEvent]: name=Creatinine; charttime=2141-05-29 05:50:00; value=1.1; valueuom=mg/dL; ref_range_lower=0.5; ref_range_upper=1.2",
+        "A1 -INCLUDED_LAB_TEST-> each of [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10]",
+        "All creatinine results linked to the admission are included."
+      ],
+      "expected_answer": [
+        "LOWER"
+      ]
+    },
+    {
+      "id": "Q46",
+      "question": "In admission 22841357, do the platelet count results linked to the admission support the coded diagnosis \"Thrombocytopenia, unspecified\"?",
+      "hops": 1,
+      "question_type": "semantic",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "SUPPORTED",
+          "description": "The platelet results support the coded diagnosis."
+        },
+        {
+          "label": "NOT_SUPPORTED",
+          "description": "The platelet results do not support the coded diagnosis."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R10",
+          "rule": "Classify medications, diagnoses and procedures by their standard clinical meaning, as given by the recorded name."
+        },
+        {
+          "id": "R12",
+          "rule": "A lab result is above or below its reference range only if it's strictly outside it; a value equal to a limit is within range. A flag of abnormal does not specify if it's above or below range."
+        }
+      ],
+      "graph_text": [
+        "A1 [Admission]: hadm_id=22841357",
+        "D1 [Diagnosis]: icd_code=07071; name=Unspecified viral hepatitis C with hepatic coma",
+        "D2 [Diagnosis]: icd_code=78959; name=Other ascites",
+        "D3 [Diagnosis]: icd_code=2875; name=Thrombocytopenia, unspecified",
+        "D4 [Diagnosis]: icd_code=2761; name=Hyposmolality and/or hyponatremia",
+        "D5 [Diagnosis]: icd_code=496; name=Chronic airway obstruction, not elsewhere classified",
+        "D6 [Diagnosis]: icd_code=5715; name=Cirrhosis of liver without mention of alcohol",
+        "D7 [Diagnosis]: icd_code=V08; name=Asymptomatic human immunodeficiency virus [HIV] infection status",
+        "D8 [Diagnosis]: icd_code=3051; name=Tobacco use disorder",
+        "L1 [LabEvent]: name=Platelet Count; charttime=2180-06-27 05:10:00; value=137; valueuom=K/uL; ref_range_lower=150; ref_range_upper=440; flag=abnormal",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2, D3, D4, D5, D6, D7, D8]",
+        "A1 -INCLUDED_LAB_TEST-> L1",
+        "All recorded diagnoses and all platelet counts linked to the admission are included."
+      ],
+      "expected_answer": [
+        "SUPPORTED"
+      ],
+      "gold_note": "Thrombocytopenia means a platelet count below normal; the linked platelet count of 137 K/uL on 2180-06-27 is below the lower limit of 150 (R10, R12).",
+      "cypher_note": "Cypher needs a mapping from the thrombocytopenia diagnosis to the platelet count lab item (itemid 51265); the diagnosis and the lab results share no code or keyword."
+    },
+    {
+      "id": "Q47",
+      "question": "Did patient 10000032 die within 0 through 30 calendar days inclusive after discharge from admission 25742920? Compare the discharge date and the date of death, not elapsed hours.",
+      "cypher_query": "MATCH (p:Patient {subject_id: '10000032'})-[:HAD_ADMISSION]->(a:Admission {hadm_id: '25742920'}) RETURN p{.subject_id, .dod} AS patient, a{.hadm_id, .dischtime, .discharge_location} AS admission;",
+      "cypher_output": {
+        "patient": {
+          "dod": "2180-09-09",
+          "subject_id": "10000032"
+        },
+        "admission": {
+          "discharge_location": "HOSPICE",
+          "dischtime": "2180-08-07 17:50:00",
+          "hadm_id": "25742920"
+        }
+      },
+      "hops": 1,
+      "question_type": "computation",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "DIED_WITHIN_30_DAYS",
+          "description": "The recorded date of death is within the inclusive 30-calendar-day window after discharge."
+        },
+        {
+          "label": "NOT_WITHIN_30_DAYS",
+          "description": "The recorded date of death is later than that window."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R07",
+          "rule": "Use dates for chronology only within the same patient’s records. Events recorded on the same date have no within-day order."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: subject_id=10000032; dod=2180-09-09",
+        "A1 [Admission]: hadm_id=25742920; dischtime=2180-08-07 17:50:00; discharge_location=HOSPICE",
+        "P1 -HAD_ADMISSION-> A1"
+      ],
+      "expected_answer": [
+        "NOT_WITHIN_30_DAYS"
+      ]
+    },
+    {
+      "id": "Q48",
+      "variant_of": "Q17",
+      "perturbation": "Re-pointed A2's RECORDED_DIAGNOSIS edge from D3 to D2, in graph_text. No node changed; D3 stays in the node list with no edge.",
+      "question": "Across the two admissions with intracranial abscess for the patient 10001217, are the sets of recorded streptococcal diagnosis codes the same or different?",
+      "hops": 2,
+      "question_type": "graph",
+      "answer_mode": "single_label",
+      "candidate_answers": [
+        {
+          "label": "SAME_CODES",
+          "description": "Both qualifying admissions have the same nonempty set of streptococcal diagnosis codes."
+        },
+        {
+          "label": "DIFFERENT_CODES",
+          "description": "Both qualifying admissions have recorded streptococcal diagnoses, but their sets of codes differ."
+        },
+        {
+          "label": "INSUFFICIENT_INFORMATION",
+          "description": "Insufficient information to decide from the supplied evidence."
+        },
+        {
+          "label": "CONFLICTING_RECORDS",
+          "description": "Conflicting records prevent a consistent conclusion."
+        }
+      ],
+      "rules": [
+        {
+          "id": "R01",
+          "rule": "Use only the supplied evidence. Treat blank values as unknown. Missing records do not establish that care never occurred. Do not infer a diagnosis from a drug or procedure."
+        },
+        {
+          "id": "R03",
+          "rule": "Follow the supplied graph paths if they are provided."
+        },
+        {
+          "id": "R08",
+          "rule": "When selecting records that must meet multiple conditions, require each selected record to satisfy every stated condition within the requested scope. Keep attributes from distinct records separate."
+        },
+        {
+          "id": "R09",
+          "rule": "Establish qualification using the supplied record properties and graph links if provided. Deduplicate by the identity requested in the question."
+        }
+      ],
+      "graph_text": [
+        "P1 [Patient]: subject_id=10001217",
+        "A1 [Admission]: hadm_id=24597018",
+        "A2 [Admission]: hadm_id=27703517",
+        "D1 [Diagnosis]: icd_code=3240; name=Intracranial abscess",
+        "D2 [Diagnosis]: icd_code=04109; name=Streptococcus infection in conditions classified elsewhere and of unspecified site, other streptococcus",
+        "D3 [Diagnosis]: icd_code=04102; name=Streptococcus infection in conditions classified elsewhere and of unspecified site, streptococcus, group B",
+        "D4 [Diagnosis]: icd_code=04184; name=Other specified bacterial infections in conditions classified elsewhere and of unspecified site, other anaerobes",
+        "P1 -HAD_ADMISSION-> each of [A1, A2]",
+        "A1 -RECORDED_DIAGNOSIS-> each of [D1, D2]",
+        "A2 -RECORDED_DIAGNOSIS-> each of [D1, D2, D4]"
+      ],
+      "expected_answer": [
+        "SAME_CODES"
+      ],
+      "gold_note": "Both admissions now link to D2 (04109) and neither links to D3, so their streptococcal code sets are the same. Only the edges differ from Q17, so the answer depends on following them."
+    }
+  ]
+}
