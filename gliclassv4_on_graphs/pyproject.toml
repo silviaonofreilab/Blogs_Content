@@ -1,0 +1,21 @@
+[project]
+name = "glidecide"
+version = "0.1.0"
+description = "Testing GLiClass v4 decision models on a MIMIC-IV demo knowledge graph."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "gliclass>=0.1.21",
+    "pandas>=3.1.0",
+    "python-dotenv>=1.2.4",
+    "runpod>=2.1.0",
+    "torch>=2.15.0",
+    "torchvision>=0.29.2",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "matplotlib>=3.11.2",
+]
